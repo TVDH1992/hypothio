@@ -162,7 +162,7 @@ export function HomeScreen() {
       <div className="flex items-start gap-2.5 p-3.5 bg-blue-50 rounded-xl">
         <ShieldCheck className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
         <p className="text-xs text-blue-600 leading-relaxed">
-          <strong>Privacy:</strong> Jouw gegevens worden uitsluitend lokaal op jouw apparaat opgeslagen en nooit gedeeld of doorgestuurd. Hypothio is een rekentool — geen financieel advies.
+          <strong>Privacy:</strong> Jouw ingevulde gegevens en berekeningen worden veilig opgeslagen in jouw persoonlijke account en nooit gedeeld met derden. Hypothio is een rekentool — geen financieel advies.
         </p>
       </div>
 

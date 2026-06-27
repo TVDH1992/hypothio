@@ -143,7 +143,7 @@ export function LandingPage({ onLogin }: Props) {
           <div className="flex items-center justify-center gap-6 mt-10 text-sm text-white/40">
             <span>✓ Gratis</span>
             <span>✓ Geen spam</span>
-            <span>✓ Data blijft lokaal</span>
+            <span>✓ Veilig opgeslagen</span>
           </div>
         </div>
         <div className="flex justify-center pb-8">
@@ -159,7 +159,7 @@ export function LandingPage({ onLogin }: Props) {
               ['🏛️', 'Nibud 2026 normtabel'],
               ['📋', 'AFM toetsrente conform regeling'],
               ['🏠', 'NHG grens €470.000'],
-              ['🔒', 'Data lokaal opgeslagen'],
+              ['🔒', 'Gegevens veilig opgeslagen'],
             ].map(([emoji, label]) => (
               <div key={label} className="flex items-center gap-2">
                 <span>{emoji}</span>
