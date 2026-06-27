@@ -1,8 +1,9 @@
+import { supabase } from './supabase';
 import type { Profiel, GeslaagdeWoning, Sessie } from '../types/profiel';
 
-const SESSIE_KEY   = 'hypothio_sessie';
-const PROFIEL_KEY  = 'hypothio_profiel';
-const WONINGEN_KEY = 'hypothio_woningen';
+const SESSIE_KEY = 'hypothio_sessie';
+
+// --- Sessie (lokaal — is gewoon Supabase auth state cache) ---
 
 export function laadSessie(): Sessie | null {
   try {
@@ -19,52 +20,114 @@ export function verwijderSessie(): void {
   localStorage.removeItem(SESSIE_KEY);
 }
 
-export function slaProfielOp(profiel: Profiel): void {
-  localStorage.setItem(PROFIEL_KEY, JSON.stringify(profiel));
+// --- Profiel (Supabase) ---
+
+export async function laadProfiel(): Promise<Profiel | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data } = await supabase
+    .from('profielen')
+    .select('*')
+    .eq('user_id', user.id)
+    .single();
+
+  if (!data) return null;
+
+  return {
+    id: data.user_id,
+    naam: data.naam,
+    aangemaakt: new Date(data.aangemaakt_op).toLocaleDateString('nl-NL'),
+    maxHypotheek: data.max_hypotheek,
+    resultaat: data.resultaat,
+  };
 }
 
-export function laadProfiel(): Profiel | null {
-  try {
-    const raw = localStorage.getItem(PROFIEL_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
+export async function slaProfielOp(profiel: Profiel): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  await supabase.from('profielen').upsert({
+    user_id: user.id,
+    naam: profiel.naam,
+    max_hypotheek: profiel.maxHypotheek,
+    resultaat: profiel.resultaat,
+    bijgewerkt_op: new Date().toISOString(),
+  }, { onConflict: 'user_id' });
 }
 
-export function verwijderProfiel(): void {
-  localStorage.removeItem(PROFIEL_KEY);
-  localStorage.removeItem(WONINGEN_KEY);
+export async function verwijderProfiel(): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  await Promise.all([
+    supabase.from('woningen').delete().eq('user_id', user.id),
+    supabase.from('profielen').delete().eq('user_id', user.id),
+  ]);
 }
 
-export function laadWoningen(): GeslaagdeWoning[] {
-  try {
-    const raw = localStorage.getItem(WONINGEN_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+// --- Woningen (Supabase) ---
+
+export async function laadWoningen(): Promise<GeslaagdeWoning[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data } = await supabase
+    .from('woningen')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('toegevoegd_op', { ascending: false });
+
+  if (!data) return [];
+
+  return data.map(w => ({
+    id: w.id,
+    fundaUrl: w.funda_url,
+    adres: w.adres,
+    stad: w.stad,
+    vraagprijs: w.vraagprijs,
+    marktwaarde: w.marktwaarde ?? undefined,
+    toegevoegd: new Date(w.toegevoegd_op).toLocaleDateString('nl-NL'),
+  }));
 }
 
-export function voegWoningToe(woning: GeslaagdeWoning): void {
-  const woningen = laadWoningen();
-  woningen.unshift(woning);
-  localStorage.setItem(WONINGEN_KEY, JSON.stringify(woningen));
+export async function voegWoningToe(woning: Omit<GeslaagdeWoning, 'id' | 'toegevoegd'>): Promise<GeslaagdeWoning | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data } = await supabase.from('woningen').insert({
+    user_id: user.id,
+    funda_url: woning.fundaUrl,
+    adres: woning.adres,
+    stad: woning.stad,
+    vraagprijs: woning.vraagprijs,
+    marktwaarde: woning.marktwaarde ?? null,
+  }).select().single();
+
+  if (!data) return null;
+
+  return {
+    id: data.id,
+    fundaUrl: data.funda_url,
+    adres: data.adres,
+    stad: data.stad,
+    vraagprijs: data.vraagprijs,
+    marktwaarde: data.marktwaarde ?? undefined,
+    toegevoegd: new Date(data.toegevoegd_op).toLocaleDateString('nl-NL'),
+  };
 }
 
-export function verwijderWoning(id: string): void {
-  const woningen = laadWoningen().filter(w => w.id !== id);
-  localStorage.setItem(WONINGEN_KEY, JSON.stringify(woningen));
+export async function verwijderWoning(id: string): Promise<void> {
+  await supabase.from('woningen').delete().eq('id', id);
 }
 
-// Extraheer adres en stad uit een Funda URL
-// Bijv: https://www.funda.nl/koop/amsterdam/huis-12345678-dorpsstraat-42/
+// --- Funda URL parser ---
+
 export function parseFundaUrl(url: string): { adres: string; stad: string; geldig: boolean } {
   try {
     const clean = url.trim().replace(/\/$/, '');
     const parts = clean.split('/').filter(Boolean);
 
-    // Zoek "koop" of "huur" segment
     const koopIdx = parts.findIndex(p => p === 'koop' || p === 'huur');
     if (koopIdx === -1 || parts.length < koopIdx + 3) {
       return { adres: '', stad: '', geldig: false };
@@ -72,13 +135,9 @@ export function parseFundaUrl(url: string): { adres: string; stad: string; geldi
 
     const stad = parts[koopIdx + 1];
     const slug = parts[koopIdx + 2];
-
     const slugParts = slug.split('-');
-    // Oud formaat: huis-{8cijfers}-straat-nummer
-    // Nieuw formaat: huis-straatnaam-nummer-postcode
     const isOudFormaat = /^\d{8}$/.test(slugParts[1] ?? '');
     const raw = isOudFormaat ? slugParts.slice(2) : slugParts.slice(1);
-    // Postcode eraf filteren (bijv. 3332bg)
     const adresDelen = raw.filter(d => !/^\d{4}[a-z]{2}$/i.test(d));
     const adres = adresDelen
       .map(d => d.charAt(0).toUpperCase() + d.slice(1))

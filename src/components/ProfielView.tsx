@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Trash2, ExternalLink, CheckCircle, XCircle, RotateCcw, User } from 'lucide-react';
 import { useWizard } from '../context/WizardContext';
 import { Button } from './ui/Button';
@@ -15,19 +15,30 @@ function euro(n: number) {
 
 export function ProfielView() {
   const { resultaat, sessie, setStap } = useWizard();
-  const [profiel, setProfiel] = useState<Profiel | null>(laadProfiel);
-  const [woningen, setWoningen] = useState<GeslaagdeWoning[]>(laadWoningen);
+  const [profiel, setProfiel] = useState<Profiel | null>(null);
+  const [woningen, setWoningen] = useState<GeslaagdeWoning[]>([]);
   const [fundaUrl, setFundaUrl] = useState('');
   const [vraagprijs, setVraagprijs] = useState('');
   const [urlFout, setUrlFout] = useState('');
   const [toonWoningForm, setToonWoningForm] = useState(false);
+  const [laden, setLaden] = useState(true);
 
   const maxHypotheek = profiel?.maxHypotheek ?? resultaat?.effectieveMaxHypotheek ?? 0;
 
   useEffect(() => {
+    async function laad() {
+      const [p, w] = await Promise.all([laadProfiel(), laadWoningen()]);
+      setProfiel(p);
+      setWoningen(w);
+      setLaden(false);
+    }
+    laad();
+  }, []);
+
+  useEffect(() => {
     if (!profiel && resultaat) {
       const nieuw: Profiel = {
-        id: Date.now().toString(),
+        id: '',
         naam: sessie.naam,
         aangemaakt: new Date().toLocaleDateString('nl-NL'),
         maxHypotheek: resultaat.effectieveMaxHypotheek,
@@ -38,7 +49,7 @@ export function ProfielView() {
     }
   }, [resultaat]);
 
-  function voegToe() {
+  async function voegToe() {
     const parsed = parseFundaUrl(fundaUrl);
     const prijs = Number(vraagprijs);
 
@@ -51,31 +62,36 @@ export function ProfielView() {
       return;
     }
 
-    const woning: GeslaagdeWoning = {
-      id: Date.now().toString(),
+    const nieuw = await voegWoningToe({
       fundaUrl: fundaUrl.trim(),
       adres: parsed.adres,
       stad: parsed.stad,
       vraagprijs: prijs,
-      toegevoegd: new Date().toLocaleDateString('nl-NL'),
-    };
+    });
 
-    voegWoningToe(woning);
-    setWoningen(laadWoningen());
+    if (nieuw) setWoningen(prev => [nieuw, ...prev]);
     setFundaUrl('');
     setVraagprijs('');
     setUrlFout('');
     setToonWoningForm(false);
   }
 
-  function verwijder(id: string) {
-    verwijderWoning(id);
-    setWoningen(laadWoningen());
+  async function verwijder(id: string) {
+    await verwijderWoning(id);
+    setWoningen(prev => prev.filter(w => w.id !== id));
   }
 
-  function reset() {
-    verwijderProfiel();
+  async function reset() {
+    await verwijderProfiel();
     setStap(1);
+  }
+
+  if (laden) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <div className="w-6 h-6 border-2 border-[#8B35C0] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
 
   return (
@@ -110,7 +126,7 @@ export function ProfielView() {
       )}
 
       {/* Woningen */}
-      {profiel && (
+      {(profiel || resultaat) && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold text-[#0D1F3C]">Mijn woningen</p>
@@ -124,7 +140,6 @@ export function ProfielView() {
             </button>
           </div>
 
-          {/* Woning toevoegen form */}
           {toonWoningForm && (
             <div className="bg-white rounded-2xl border border-[#8B35C0]/30 p-5 space-y-4">
               <FormField
@@ -154,7 +169,6 @@ export function ProfielView() {
             </div>
           )}
 
-          {/* Woningenlijst */}
           {woningen.length === 0 && !toonWoningForm && (
             <div className="text-center py-8 text-gray-400">
               <p className="text-sm">Nog geen woningen toegevoegd.</p>

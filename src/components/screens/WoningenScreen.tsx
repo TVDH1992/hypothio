@@ -31,8 +31,7 @@ interface WozAnalyse {
 
 export function WoningenScreen() {
   const { resultaat } = useWizard();
-  const profiel = laadProfiel();
-  const maxHypotheek = profiel?.maxHypotheek ?? resultaat?.effectieveMaxHypotheek ?? 0;
+  const [maxHypotheek, setMaxHypotheek] = useState(resultaat?.effectieveMaxHypotheek ?? 0);
 
   // --- WOZ analyse ---
   const [zoekterm, setZoekterm] = useState('');
@@ -45,7 +44,7 @@ export function WoningenScreen() {
   const zoekTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // --- Opgeslagen woningen ---
-  const [woningen, setWoningen] = useState<GeslaagdeWoning[]>(laadWoningen);
+  const [woningen, setWoningen] = useState<GeslaagdeWoning[]>([]);
   const [toonFundaForm, setToonFundaForm] = useState(false);
   const [fundaUrl, setFundaUrl] = useState('');
   const [fundaPrijs, setFundaPrijs] = useState('');
@@ -74,6 +73,15 @@ export function WoningenScreen() {
     jarenInBezit?: number;
     eigenaarSinds?: string;
   } | null>(null);
+
+  useEffect(() => {
+    async function laad() {
+      const [profiel, opgeslagen] = await Promise.all([laadProfiel(), laadWoningen()]);
+      if (profiel?.maxHypotheek) setMaxHypotheek(profiel.maxHypotheek);
+      setWoningen(opgeslagen);
+    }
+    laad();
+  }, []);
 
   useEffect(() => {
     if (!geselecteerd && zoekterm.length >= 4) {
@@ -221,27 +229,25 @@ export function WoningenScreen() {
     }
   }
 
-  function voegFundaToe() {
+  async function voegFundaToe() {
     const parsed = fundaGevonden ?? parseFundaUrl(fundaUrl);
     if (!parsed.adres) { setFundaFout('Geen geldige Funda URL.'); return; }
     const prijs = Number(fundaPrijs) || fundaAnalyse?.marktwaarde || 0;
-    voegWoningToe({
-      id: Date.now().toString(),
+    const nieuw = await voegWoningToe({
       fundaUrl: fundaUrl.trim(),
       adres: parsed.adres,
       stad: parsed.stad,
       vraagprijs: prijs,
-      marktwaarde: fundaGevonden ? Number(fundaPrijs) : undefined,
-      toegevoegd: new Date().toLocaleDateString('nl-NL'),
+      marktwaarde: fundaAnalyse?.marktwaarde,
     });
-    setWoningen(laadWoningen());
+    if (nieuw) setWoningen(prev => [nieuw, ...prev]);
     setFundaUrl(''); setFundaPrijs(''); setFundaFout('');
     setFundaGevonden(null); setToonFundaForm(false);
   }
 
-  function verwijder(id: string) {
-    verwijderWoning(id);
-    setWoningen(laadWoningen());
+  async function verwijder(id: string) {
+    await verwijderWoning(id);
+    setWoningen(prev => prev.filter(w => w.id !== id));
   }
 
   const advies = wozAnalyse?.vraagprijs

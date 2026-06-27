@@ -57,7 +57,20 @@ const SCENARIO_PERIODES: RentevastePeriode[] = [10, 15, 20, 30];
 export function Stap8Resultaat() {
   const { resultaat, situatie, inkomen1, inkomen2, woning, verplichtingen, rol, setStap, actueleRentes, actueleNormen } = useWizard();
   const { setTab } = useApp();
+  const [woningen, setWoningen] = useState<import('../../types/profiel').GeslaagdeWoning[]>([]);
+
+  useEffect(() => {
+    laadWoningen().then(setWoningen);
+  }, []);
+
   if (!resultaat) return null;
+
+  const {
+    effectieveMaxHypotheek, brutoMaandlast, nettoMaandlast,
+    nhgMogelijk, startersvrijstelling, energielabelBonus,
+    bijkomendeKosten, toetsinkomen, maandlastenVerplichtingen,
+    maxHypotheekOpInkomen, maxHypotheekOpWoning, eigenGeldTekort,
+  } = resultaat;
 
   const scenarios = SCENARIO_PERIODES.map(p => {
     const r = berekenResultaat(situatie, inkomen1, inkomen2, verplichtingen, { ...woning, rentevastePeriode: p }, actueleRentes, actueleNormen);
@@ -66,12 +79,6 @@ export function Stap8Resultaat() {
 
   const adv = rol === 'adviseur';
   const animatedMax = useCountUp(effectieveMaxHypotheek);
-  const {
-    effectieveMaxHypotheek, brutoMaandlast, nettoMaandlast,
-    nhgMogelijk, startersvrijstelling, energielabelBonus,
-    bijkomendeKosten, toetsinkomen, maandlastenVerplichtingen,
-    maxHypotheekOpInkomen, maxHypotheekOpWoning, eigenGeldTekort,
-  } = resultaat;
 
   const koopsom = woning.koopsom ?? 0;
   const eigenGeld = woning.eigenGeld ?? 0;
@@ -345,7 +352,6 @@ export function Stap8Resultaat() {
 
       {/* Opgeslagen Funda woningen */}
       {(() => {
-        const woningen = laadWoningen();
         if (woningen.length === 0) return null;
         const eigenGeld = woning.eigenGeld ?? 0;
         return (
