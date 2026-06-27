@@ -50,6 +50,8 @@ export function WoningenScreen() {
   const [fundaUrl, setFundaUrl] = useState('');
   const [fundaPrijs, setFundaPrijs] = useState('');
   const [fundaFout, setFundaFout] = useState('');
+  const [fundaLaden, setFundaLaden] = useState(false);
+  const [fundaGevonden, setFundaGevonden] = useState<{ adres: string; stad: string } | null>(null);
 
   useEffect(() => {
     if (!geselecteerd && zoekterm.length >= 4) {
@@ -104,11 +106,37 @@ export function WoningenScreen() {
     setWozFout('');
   }
 
+  async function verwerkFundaUrl(url: string) {
+    setFundaUrl(url);
+    setFundaFout('');
+    setFundaGevonden(null);
+    setFundaPrijs('');
+    const parsed = parseFundaUrl(url);
+    if (!parsed.geldig || !url.includes('funda.nl')) return;
+    setFundaLaden(true);
+    try {
+      const zoekQuery = `${parsed.adres} ${parsed.stad}`;
+      const suggesties = await zoekAdres(zoekQuery);
+      if (suggesties.length > 0) {
+        const woz = await haalWozWaarde(suggesties[0].nummeraanduidingId);
+        const marktwaarde = schatMarktwaarde(woz.wozWaarde);
+        setFundaPrijs(String(marktwaarde));
+        setFundaGevonden({ adres: parsed.adres, stad: parsed.stad });
+      } else {
+        setFundaGevonden({ adres: parsed.adres, stad: parsed.stad });
+      }
+    } catch {
+      setFundaGevonden({ adres: parsed.adres, stad: parsed.stad });
+    } finally {
+      setFundaLaden(false);
+    }
+  }
+
   function voegFundaToe() {
-    const parsed = parseFundaUrl(fundaUrl);
+    const parsed = fundaGevonden ?? parseFundaUrl(fundaUrl);
     const prijs = Number(fundaPrijs);
-    if (!parsed.geldig) { setFundaFout('Geen geldige Funda URL.'); return; }
-    if (!prijs || prijs < 10_000) { setFundaFout('Vul een geldige vraagprijs in.'); return; }
+    if (!parsed.adres) { setFundaFout('Geen geldige Funda URL.'); return; }
+    if (!prijs || prijs < 10_000) { setFundaFout('Vul een vraagprijs in.'); return; }
     voegWoningToe({
       id: Date.now().toString(),
       fundaUrl: fundaUrl.trim(),
@@ -118,7 +146,8 @@ export function WoningenScreen() {
       toegevoegd: new Date().toLocaleDateString('nl-NL'),
     });
     setWoningen(laadWoningen());
-    setFundaUrl(''); setFundaPrijs(''); setFundaFout(''); setToonFundaForm(false);
+    setFundaUrl(''); setFundaPrijs(''); setFundaFout('');
+    setFundaGevonden(null); setToonFundaForm(false);
   }
 
   function verwijder(id: string) {
@@ -284,14 +313,29 @@ export function WoningenScreen() {
         {toonFundaForm && (
           <div className="bg-white rounded-2xl border border-[#1ABC9C]/30 p-5 space-y-4 mb-4">
             <FormField label="Funda link" placeholder="https://www.funda.nl/koop/..."
-              tooltip="Plak de volledige URL van de woningpagina"
-              value={fundaUrl} onChange={e => { setFundaUrl(e.target.value); setFundaFout(''); }} />
-            <FormField label="Vraagprijs" type="number" min={0} prefix="€" placeholder="350000"
+              tooltip="Plak de Funda URL — we halen de waarde automatisch op"
+              value={fundaUrl} onChange={e => verwerkFundaUrl(e.target.value)} />
+
+            {fundaLaden && (
+              <p className="text-xs text-[#1ABC9C] flex items-center gap-1.5">
+                <span className="animate-spin inline-block">⟳</span> Woningwaarde ophalen...
+              </p>
+            )}
+
+            {fundaGevonden && !fundaLaden && (
+              <div className="bg-emerald-50 rounded-xl px-3 py-2 text-xs text-emerald-700">
+                Gevonden: <span className="font-medium">{fundaGevonden.adres}, {fundaGevonden.stad}</span>
+              </div>
+            )}
+
+            <FormField label={fundaGevonden ? 'Geschatte marktwaarde (aanpasbaar)' : 'Vraagprijs'}
+              type="number" min={0} prefix="€" placeholder="350000"
               value={fundaPrijs} onChange={e => setFundaPrijs(e.target.value)} />
+
             {fundaFout && <p className="text-xs text-red-500">{fundaFout}</p>}
             <div className="flex gap-2">
-              <Button variant="ghost" size="sm" onClick={() => setToonFundaForm(false)}>Annuleer</Button>
-              <Button size="sm" onClick={voegFundaToe} disabled={!fundaUrl || !fundaPrijs} className="flex-1">
+              <Button variant="ghost" size="sm" onClick={() => { setToonFundaForm(false); setFundaGevonden(null); setFundaUrl(''); setFundaPrijs(''); }}>Annuleer</Button>
+              <Button size="sm" onClick={voegFundaToe} disabled={!fundaUrl || !fundaPrijs || fundaLaden} className="flex-1">
                 Opslaan
               </Button>
             </div>
