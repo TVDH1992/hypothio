@@ -1,38 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 
-// AFM publiceert de wettelijke minimale toetsrente op hun website
-async function haalAfmToetsrente() {
-  const res = await fetch(
-    'https://www.afm.nl/nl-nl/professionals/sectoren/hypotheekadviseurs/hypotheekverstrekking/toetsrente',
-    {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; hypothio-normen/1.0)',
-        'Accept': 'text/html',
-        'Accept-Language': 'nl-NL,nl;q=0.9',
-      },
-    }
-  );
-  if (!res.ok) throw new Error(`AFM HTTP ${res.status}`);
-  const html = await res.text();
-
-  // AFM toont bijv. "2,50%" of "5,00%" op de pagina
-  const patronen = [
-    /toetsrente[^<]{0,200}?(\d{1,2}[,.]\d{1,2})\s*%/i,
-    /(\d{1,2}[,.]\d{1,2})\s*%[^<]{0,100}?toetsrente/i,
-    /minimale\s+toetsrente[^<]{0,100}?(\d{1,2}[,.]\d{1,2})/i,
-  ];
-
-  for (const p of patronen) {
-    const m = html.match(p);
-    if (m) {
-      const rente = parseFloat(m[1].replace(',', '.')) / 100;
-      if (rente > 0.01 && rente < 0.20) return rente;
-    }
-  }
-  return null;
-}
+// Handmatig rentes updaten in Supabase via dit endpoint.
+// Aanroepen met: POST /api/sync-normen
+// Header: x-sync-secret: <SYNC_SECRET>
+// Body: { "rentes": { "10": 0.0385, "15": 0.0395, "20": 0.0405, "30": 0.042 }, "afmRente": 0.05 }
 
 export default async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).end();
+
   const secret = req.headers['x-sync-secret'];
   if (secret !== process.env.SYNC_SECRET) {
     return res.status(401).json({ error: 'Niet geautoriseerd' });
@@ -41,28 +16,47 @@ export default async function handler(req, res) {
   const supabaseUrl = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
   if (!supabaseUrl || !supabaseKey) {
-    return res.status(500).json({ error: 'Supabase env vars ontbreken', supabaseUrl: !!supabaseUrl, supabaseKey: !!supabaseKey });
+    return res.status(500).json({ error: 'Supabase env vars ontbreken' });
   }
   const supabase = createClient(supabaseUrl, supabaseKey);
 
-  const resultaat = { afm: null, fout: null };
+  const { rentes, afmRente } = req.body ?? {};
+  const bijgewerkt = [];
+  const fouten = [];
 
-  try {
-    const afmRente = await haalAfmToetsrente();
-    if (afmRente) {
-      resultaat.afm = afmRente;
-      // Bijwerken in rentestand tabel voor periodes < 10 jaar
-      await supabase
+  // Marktrenties updaten (10, 15, 20, 30 jaar)
+  if (rentes && typeof rentes === 'object') {
+    for (const [periode, rente] of Object.entries(rentes)) {
+      const p = Number(periode);
+      const r = Number(rente);
+      if (!p || !r || r < 0.005 || r > 0.20) continue;
+      const { error } = await supabase
         .from('rentestand')
-        .update({ rente: afmRente, geldig_vanaf: new Date().toISOString().slice(0, 10) })
-        .lt('periode', 10)
+        .update({ rente: r, geldig_vanaf: new Date().toISOString().slice(0, 10) })
+        .eq('periode', p)
         .eq('actief', true);
-    } else {
-      resultaat.fout = 'Kon AFM toetsrente niet parsen';
+      if (error) fouten.push(`periode ${p}: ${error.message}`);
+      else bijgewerkt.push(`${p}jr → ${(r * 100).toFixed(2)}%`);
     }
-  } catch (e) {
-    resultaat.fout = e.message;
   }
 
-  return res.status(200).json(resultaat);
+  // AFM minimale toetsrente updaten (periodes < 10 jaar)
+  if (afmRente && Number(afmRente) > 0.01) {
+    const r = Number(afmRente);
+    const { error } = await supabase
+      .from('rentestand')
+      .update({ rente: r, geldig_vanaf: new Date().toISOString().slice(0, 10) })
+      .lt('periode', 10)
+      .eq('actief', true);
+    if (error) fouten.push(`AFM rente: ${error.message}`);
+    else bijgewerkt.push(`AFM (<10jr) → ${(r * 100).toFixed(2)}%`);
+  }
+
+  return res.status(200).json({
+    bijgewerkt,
+    fouten: fouten.length ? fouten : undefined,
+    tip: bijgewerkt.length === 0
+      ? 'Geef rentes mee in body: { "rentes": { "10": 0.0385, "15": 0.0395 }, "afmRente": 0.05 }'
+      : undefined,
+  });
 }
