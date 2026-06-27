@@ -54,10 +54,15 @@ export function WoningenScreen() {
   const [fundaAnalyseLaden, setFundaAnalyseLaden] = useState(false);
   const [fundaAnalyseFout, setFundaAnalyseFout] = useState('');
   const [fundaGevonden, setFundaGevonden] = useState<{ adres: string; stad: string; type?: string } | null>(null);
+  const [fundaDetails, setFundaDetails] = useState<{
+    prijs?: number; oppervlakte?: number; bouwjaar?: number;
+    kamers?: number; energielabel?: string; isNieuwbouw?: boolean; prijstype?: string;
+  } | null>(null);
   const [fundaAnalyse, setFundaAnalyse] = useState<{
     marktwaarde: number;
     biedadvies: string;
     vraagprijsOordeel: string;
+    kostenKoper?: number;
     aandachtspunten: string[];
     pluspunten: string[];
     samenvatting: string;
@@ -121,58 +126,69 @@ export function WoningenScreen() {
     setFundaFout('');
     setFundaGevonden(null);
     setFundaAnalyse(null);
+    setFundaDetails(null);
     setFundaAnalyseFout('');
     setFundaPrijs('');
     const parsed = parseFundaUrl(url);
     if (!parsed.geldig || !url.includes('funda.nl')) return;
     setFundaLaden(true);
 
-    const type = url.includes('/appartement') ? 'appartement' : 'huis';
+    const type = url.includes('/appartement') ? 'appartement' : url.includes('/huis') ? 'huis' : 'woning';
     let wozWaarde: number | undefined;
     let peildatum: string | undefined;
+    let details: typeof fundaDetails = {};
 
-    // Probeer prijs direct van Funda pagina te halen
+    // Haal alle Funda data op (prijs, m², bouwjaar, kamers, energielabel, nieuwbouw)
     try {
-      const fundaRes = await fetch('/api/funda-prijs', {
+      const fundaRes = await fetch('/api/funda-data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url }),
       });
       if (fundaRes.ok) {
-        const { prijs } = await fundaRes.json();
-        if (prijs) setFundaPrijs(String(prijs));
+        const d = await fundaRes.json();
+        details = d;
+        setFundaDetails(d);
+        if (d.prijs) setFundaPrijs(String(d.prijs));
       }
     } catch { /* niet beschikbaar */ }
 
-    // WOZ lookup voor marktwaarde context
+    // WOZ lookup voor extra context
     try {
       const suggesties = await zoekAdres(`${parsed.adres} ${parsed.stad}`);
       if (suggesties.length > 0) {
         const woz = await haalWozWaarde(suggesties[0].nummeraanduidingId);
         wozWaarde = woz.wozWaarde;
         peildatum = woz.peildatum;
-        if (!fundaPrijs) setFundaPrijs(String(schatMarktwaarde(woz.wozWaarde)));
       }
     } catch { /* WOZ niet beschikbaar */ }
 
     setFundaGevonden({ adres: parsed.adres, stad: parsed.stad, type });
     setFundaLaden(false);
 
-    // Claude analyse — apart zodat WOZ falen het niet blokkeert
+    // Claude analyse met alle beschikbare data
     setFundaAnalyseLaden(true);
     setFundaAnalyseFout('');
     try {
       const analyseRes = await fetch('/api/woninganalyse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ adres: parsed.adres, stad: parsed.stad, type, wozWaarde, peildatum }),
+        body: JSON.stringify({
+          adres: parsed.adres, stad: parsed.stad, type,
+          wozWaarde, peildatum,
+          oppervlakte: details?.oppervlakte,
+          bouwjaar: details?.bouwjaar,
+          kamers: details?.kamers,
+          energielabel: details?.energielabel,
+          isNieuwbouw: details?.isNieuwbouw,
+          prijstype: details?.prijstype,
+          vraagprijs: details?.prijs,
+        }),
       });
       if (analyseRes.ok) {
         const analyse = await analyseRes.json();
-        // Zorg dat marktwaarde altijd een getal is
-        if (analyse.marktwaarde) analyse.marktwaarde = Number(analyse.marktwaarde) || 0;
         setFundaAnalyse(analyse);
-        if (analyse.marktwaarde > 0 && !fundaPrijs) setFundaPrijs(String(analyse.marktwaarde));
+        if (analyse.marktwaarde > 0 && !details?.prijs) setFundaPrijs(String(analyse.marktwaarde));
       } else {
         const err = await analyseRes.json().catch(() => ({}));
         setFundaAnalyseFout(err.error ?? `Analyse mislukt (${analyseRes.status})`);
@@ -375,8 +391,38 @@ export function WoningenScreen() {
             )}
 
             {fundaGevonden && !fundaLaden && (
-              <div className="bg-emerald-50 rounded-xl px-3 py-2 text-xs text-emerald-700">
-                Gevonden: <span className="font-medium">{fundaGevonden.adres}, {fundaGevonden.stad}</span>
+              <div className="space-y-2">
+                <div className="bg-emerald-50 rounded-xl px-3 py-2 text-xs text-emerald-700 flex items-center justify-between">
+                  <span>Gevonden: <span className="font-medium">{fundaGevonden.adres}, {fundaGevonden.stad}</span></span>
+                  {fundaDetails?.isNieuwbouw && (
+                    <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-semibold ml-2">Nieuwbouw</span>
+                  )}
+                </div>
+                {(fundaDetails?.oppervlakte || fundaDetails?.bouwjaar || fundaDetails?.kamers || fundaDetails?.energielabel) && (
+                  <div className="flex flex-wrap gap-2">
+                    {fundaDetails.oppervlakte && (
+                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-lg">{fundaDetails.oppervlakte} m²</span>
+                    )}
+                    {fundaDetails.kamers && (
+                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-lg">{fundaDetails.kamers} kamers</span>
+                    )}
+                    {fundaDetails.bouwjaar && (
+                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-lg">Bouwjaar {fundaDetails.bouwjaar}</span>
+                    )}
+                    {fundaDetails.energielabel && (
+                      <span className={`text-xs px-2 py-1 rounded-lg font-semibold ${
+                        ['A+++','A++','A+','A'].includes(fundaDetails.energielabel) ? 'bg-emerald-100 text-emerald-700' :
+                        fundaDetails.energielabel === 'B' ? 'bg-lime-100 text-lime-700' :
+                        fundaDetails.energielabel === 'C' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-red-100 text-red-700'}`}>
+                        Label {fundaDetails.energielabel}
+                      </span>
+                    )}
+                    {fundaDetails.prijstype === 'von' && (
+                      <span className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-lg">Vrij op naam</span>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
@@ -442,6 +488,18 @@ export function WoningenScreen() {
                         </li>
                       ))}
                     </ul>
+                  </div>
+                )}
+
+                {fundaAnalyse.kostenKoper && fundaAnalyse.kostenKoper > 0 && (
+                  <div className="bg-white rounded-lg p-3">
+                    <p className="text-xs text-gray-400 mb-1">Geschatte bijkomende kosten</p>
+                    <p className="text-sm font-semibold text-[#0D1F3C]">{euro(fundaAnalyse.kostenKoper)}</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">
+                      {fundaDetails?.isNieuwbouw || fundaDetails?.prijstype === 'von'
+                        ? 'Notaris + taxatie (geen overdrachtsbelasting bij v.o.n.)'
+                        : 'Overdrachtsbelasting 2% + notaris + taxatie'}
+                    </p>
                   </div>
                 )}
 
