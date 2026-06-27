@@ -29,5 +29,6 @@ export default async function handler(req, res) {
     ldScriptCount: ldScripts.length,
     ldData,
     nextDataSnippet,
+    htmlPreview: typeof html === 'string' ? html.substring(0, 3000) : html,
   });
 }
