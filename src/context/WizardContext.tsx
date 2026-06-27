@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { SituatieData, InkomenData, VerplichtingenData, WoningData, Resultaat } from '../types/wizard';
 import type { Sessie } from '../types/profiel';
 
@@ -59,8 +59,9 @@ export function WizardProvider({ children, sessie }: { children: ReactNode; sess
 
   const volgende = () =>
     setStap(s => {
-      if (s === 3 && !situatie.metPartner) return 5;
-      return Math.min(s + 1, 8);
+      const nieuw = s === 3 && !situatie.metPartner ? 5 : Math.min(s + 1, 8);
+      history.pushState({ stap: nieuw }, '');
+      return nieuw;
     });
 
   const vorige = () =>
@@ -68,6 +69,17 @@ export function WizardProvider({ children, sessie }: { children: ReactNode; sess
       if (s === 5 && !situatie.metPartner) return 3;
       return Math.max(s - 1, 0);
     });
+
+  useEffect(() => {
+    const handler = (e: PopStateEvent) => {
+      const stap = e.state?.stap;
+      if (typeof stap === 'number') {
+        setStap(s => Math.max(s - 1, 0));
+      }
+    };
+    window.addEventListener('popstate', handler);
+    return () => window.removeEventListener('popstate', handler);
+  }, []);
 
   return (
     <WizardContext.Provider value={{
