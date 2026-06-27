@@ -7,7 +7,7 @@ import { useWizard } from '../../context/WizardContext';
 import { Button } from '../ui/Button';
 import { FormField } from '../ui/FormField';
 import {
-  zoekAdres, haalWozWaarde, schatMarktwaarde, biedadvies,
+  zoekAdres, haalWozWaarde, haalWozOpAdres, schatMarktwaarde, biedadvies,
   type AdresSuggestie, type WozResultaat,
 } from '../../lib/woz';
 import {
@@ -153,14 +153,11 @@ export function WoningenScreen() {
       }
     } catch { /* niet beschikbaar */ }
 
-    // WOZ lookup voor extra context
+    // WOZ lookup via server (vermijdt CORS)
     try {
-      const suggesties = await zoekAdres(`${parsed.adres} ${parsed.stad}`);
-      if (suggesties.length > 0) {
-        const woz = await haalWozWaarde(suggesties[0].nummeraanduidingId);
-        wozWaarde = woz.wozWaarde;
-        peildatum = woz.peildatum;
-      }
+      const woz = await haalWozOpAdres(`${parsed.adres} ${parsed.stad}`);
+      wozWaarde = woz.wozWaarde;
+      peildatum = woz.peildatum;
     } catch { /* WOZ niet beschikbaar */ }
 
     setFundaGevonden({ adres: parsed.adres, stad: parsed.stad, type });

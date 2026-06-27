@@ -28,17 +28,32 @@ export async function zoekAdres(query: string): Promise<AdresSuggestie[]> {
     }));
 }
 
+// WOZ via onze eigen serverless functie (vermijdt CORS van wozwaardeloket.nl)
 export async function haalWozWaarde(nummeraanduidingId: string): Promise<WozResultaat> {
-  const res = await fetch(`${WOZ_URL}/${nummeraanduidingId}`);
-  if (!res.ok) throw new Error('WOZ waarde niet beschikbaar voor dit adres');
-  const data: Array<{ peildatum: string; vastgesteldeWaarde: number }> = await res.json();
-  if (!data?.length) throw new Error('Geen WOZ gegevens gevonden');
-  const latest = data.sort((a, b) => b.peildatum.localeCompare(a.peildatum))[0];
-  return {
-    wozWaarde: latest.vastgesteldeWaarde,
-    peildatum: latest.peildatum,
-    nummeraanduidingId,
-  };
+  const res = await fetch('/api/woz', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nummeraanduidingId }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error ?? 'WOZ waarde niet beschikbaar');
+  }
+  return res.json();
+}
+
+// WOZ direct op adres opzoeken (PDOK + WOZ in één serverronde)
+export async function haalWozOpAdres(adres: string): Promise<WozResultaat> {
+  const res = await fetch('/api/woz', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ adres }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error ?? 'WOZ niet beschikbaar');
+  }
+  return res.json();
 }
 
 // Schat marktwaarde op basis van WOZ (correctiefactor 2024/2025 ~10%)
