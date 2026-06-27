@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { SituatieData, InkomenData, VerplichtingenData, WoningData, Resultaat } from '../types/wizard';
 import type { Sessie } from '../types/profiel';
+import { haalActueleRentes, type RenteTabel } from '../lib/rentes';
+import { TOETSRENTES } from '../lib/normen';
 
 export type Rol = 'consument' | 'adviseur';
 
@@ -8,6 +10,7 @@ interface WizardContextType {
   stap: number;
   rol: Rol;
   sessie: Sessie;
+  actueleRentes: RenteTabel;
   situatie: Partial<SituatieData>;
   inkomen1: Partial<InkomenData>;
   inkomen2: Partial<InkomenData>;
@@ -56,6 +59,11 @@ export function WizardProvider({ children, sessie }: { children: ReactNode; sess
   const [woning, setWoning]                 = useState<Partial<WoningData>>(defaultWoning);
   const [resultaat, setResultaat]           = useState<Resultaat | null>(null);
   const [rol, setRol]                       = useState<Rol>('consument');
+  const [actueleRentes, setActueleRentes]   = useState<RenteTabel>(TOETSRENTES);
+
+  useEffect(() => {
+    haalActueleRentes().then(setActueleRentes).catch(() => {});
+  }, []);
 
   const volgende = () =>
     setStap(s => {
@@ -83,7 +91,7 @@ export function WizardProvider({ children, sessie }: { children: ReactNode; sess
 
   return (
     <WizardContext.Provider value={{
-      stap, rol, sessie, situatie, inkomen1, inkomen2, verplichtingen, woning, resultaat,
+      stap, rol, sessie, situatie, inkomen1, inkomen2, verplichtingen, woning, resultaat, actueleRentes,
       setStap, setRol,
       updateSituatie:      d => setSituatie(s => ({ ...s, ...d })),
       updateInkomen1:      d => setInkomen1(s => ({ ...s, ...d })),

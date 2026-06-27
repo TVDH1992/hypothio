@@ -67,6 +67,13 @@ export function WoningenScreen() {
     pluspunten: string[];
     samenvatting: string;
   } | null>(null);
+  const [huispediaData, setHuispediaData] = useState<{
+    transacties?: { datum: string; bedrag: number }[];
+    laasteVerkoopJaar?: number;
+    laasteVerkoopPrijs?: number;
+    jarenInBezit?: number;
+    eigenaarSinds?: string;
+  } | null>(null);
 
   useEffect(() => {
     if (!geselecteerd && zoekterm.length >= 4) {
@@ -129,6 +136,7 @@ export function WoningenScreen() {
     setFundaDetails(null);
     setFundaAnalyseFout('');
     setFundaPrijs('');
+    setHuispediaData(null);
     const parsed = parseFundaUrl(url);
     if (!parsed.geldig || !url.includes('funda.nl')) return;
     setFundaLaden(true);
@@ -167,6 +175,15 @@ export function WoningenScreen() {
 
     setFundaGevonden({ adres: parsed.adres, stad: parsed.stad, type });
     setFundaLaden(false);
+
+    // Huispedia verkoophistorie (parallel, stille fallback bij fout)
+    fetch('/api/huispedia', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ adres: parsed.adres, stad: parsed.stad }),
+    }).then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.laasteVerkoopJaar || d?.transacties?.length) setHuispediaData(d); })
+      .catch(() => {});
 
     // Claude analyse met alle beschikbare data
     setFundaAnalyseLaden(true);
@@ -511,6 +528,41 @@ export function WoningenScreen() {
                 )}
 
                 <p className="text-xs text-gray-500 italic">{fundaAnalyse.samenvatting}</p>
+              </div>
+            )}
+
+            {huispediaData && (huispediaData.laasteVerkoopJaar || huispediaData.transacties?.length) && (
+              <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+                <p className="text-xs font-semibold text-[#0D1F3C]">Verkoophistorie</p>
+                {huispediaData.laasteVerkoopJaar && (
+                  <div className="bg-white rounded-lg p-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-gray-400">Laatste verkoop</p>
+                      <p className="text-sm font-semibold text-[#0D1F3C]">
+                        {euro(huispediaData.laasteVerkoopPrijs!)}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-400">{huispediaData.laasteVerkoopJaar}</p>
+                      {huispediaData.jarenInBezit !== undefined && (
+                        <p className="text-xs text-[#1ABC9C] font-medium">
+                          ~{huispediaData.jarenInBezit} jaar in bezit
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {huispediaData.transacties && huispediaData.transacties.length > 1 && (
+                  <div className="space-y-1">
+                    {huispediaData.transacties.slice(1).map((t, i) => (
+                      <div key={i} className="flex justify-between text-xs text-gray-500 px-1">
+                        <span>{t.datum}</span>
+                        <span>{euro(t.bedrag)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <p className="text-[10px] text-gray-400">Bron: Huispedia · indicatief</p>
               </div>
             )}
 
