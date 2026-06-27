@@ -128,14 +128,27 @@ export function WoningenScreen() {
     let wozWaarde: number | undefined;
     let peildatum: string | undefined;
 
-    // WOZ lookup — mag falen
+    // Probeer prijs direct van Funda pagina te halen
+    try {
+      const fundaRes = await fetch('/api/funda-prijs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+      if (fundaRes.ok) {
+        const { prijs } = await fundaRes.json();
+        if (prijs) setFundaPrijs(String(prijs));
+      }
+    } catch { /* niet beschikbaar */ }
+
+    // WOZ lookup voor marktwaarde context
     try {
       const suggesties = await zoekAdres(`${parsed.adres} ${parsed.stad}`);
       if (suggesties.length > 0) {
         const woz = await haalWozWaarde(suggesties[0].nummeraanduidingId);
         wozWaarde = woz.wozWaarde;
         peildatum = woz.peildatum;
-        setFundaPrijs(String(schatMarktwaarde(woz.wozWaarde)));
+        if (!fundaPrijs) setFundaPrijs(String(schatMarktwaarde(woz.wozWaarde)));
       }
     } catch { /* WOZ niet beschikbaar */ }
 
