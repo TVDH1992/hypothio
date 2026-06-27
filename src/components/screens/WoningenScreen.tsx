@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import {
   Search, CheckCircle, XCircle, AlertTriangle, ExternalLink,
-  Trash2, Plus, TrendingUp, Gavel, Info,
+  Trash2, Plus, TrendingUp, Gavel, Info, Loader2,
 } from 'lucide-react';
 import { useWizard } from '../../context/WizardContext';
 import { Button } from '../ui/Button';
@@ -51,7 +51,15 @@ export function WoningenScreen() {
   const [fundaPrijs, setFundaPrijs] = useState('');
   const [fundaFout, setFundaFout] = useState('');
   const [fundaLaden, setFundaLaden] = useState(false);
-  const [fundaGevonden, setFundaGevonden] = useState<{ adres: string; stad: string } | null>(null);
+  const [fundaGevonden, setFundaGevonden] = useState<{ adres: string; stad: string; type?: string } | null>(null);
+  const [fundaAnalyse, setFundaAnalyse] = useState<{
+    marktwaarde: number;
+    biedadvies: string;
+    vraagprijsOordeel: string;
+    aandachtspunten: string[];
+    pluspunten: string[];
+    samenvatting: string;
+  } | null>(null);
 
   useEffect(() => {
     if (!geselecteerd && zoekterm.length >= 4) {
@@ -110,20 +118,38 @@ export function WoningenScreen() {
     setFundaUrl(url);
     setFundaFout('');
     setFundaGevonden(null);
+    setFundaAnalyse(null);
     setFundaPrijs('');
     const parsed = parseFundaUrl(url);
     if (!parsed.geldig || !url.includes('funda.nl')) return;
     setFundaLaden(true);
     try {
+      const type = url.includes('/appartement') ? 'appartement' : 'huis';
       const zoekQuery = `${parsed.adres} ${parsed.stad}`;
       const suggesties = await zoekAdres(zoekQuery);
+
+      let wozWaarde: number | undefined;
+      let peildatum: string | undefined;
+
       if (suggesties.length > 0) {
         const woz = await haalWozWaarde(suggesties[0].nummeraanduidingId);
-        const marktwaarde = schatMarktwaarde(woz.wozWaarde);
-        setFundaPrijs(String(marktwaarde));
-        setFundaGevonden({ adres: parsed.adres, stad: parsed.stad });
-      } else {
-        setFundaGevonden({ adres: parsed.adres, stad: parsed.stad });
+        wozWaarde = woz.wozWaarde;
+        peildatum = woz.peildatum;
+        setFundaPrijs(String(schatMarktwaarde(woz.wozWaarde)));
+      }
+
+      setFundaGevonden({ adres: parsed.adres, stad: parsed.stad, type });
+
+      // Claude analyse
+      const analyseRes = await fetch('/api/woninganalyse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adres: parsed.adres, stad: parsed.stad, type, wozWaarde, peildatum }),
+      });
+      if (analyseRes.ok) {
+        const analyse = await analyseRes.json();
+        setFundaAnalyse(analyse);
+        if (analyse.marktwaarde && !wozWaarde) setFundaPrijs(String(analyse.marktwaarde));
       }
     } catch {
       setFundaGevonden({ adres: parsed.adres, stad: parsed.stad });
@@ -318,9 +344,9 @@ export function WoningenScreen() {
               value={fundaUrl} onChange={e => verwerkFundaUrl(e.target.value)} />
 
             {fundaLaden && (
-              <p className="text-xs text-[#1ABC9C] flex items-center gap-1.5">
-                <span className="animate-spin inline-block">⟳</span> Woningwaarde ophalen...
-              </p>
+              <div className="flex items-center gap-2 py-2 text-sm text-[#1ABC9C]">
+                <Loader2 className="w-4 h-4 animate-spin" /> Woning analyseren...
+              </div>
             )}
 
             {fundaGevonden && !fundaLaden && (
@@ -329,7 +355,59 @@ export function WoningenScreen() {
               </div>
             )}
 
-            <FormField label={fundaGevonden ? 'Geschatte marktwaarde (aanpasbaar)' : 'Vraagprijs'}
+            {fundaAnalyse && !fundaLaden && (
+              <div className="space-y-3 bg-gray-50 rounded-xl p-4">
+                <p className="text-xs font-semibold text-[#0D1F3C]">Woninganalyse</p>
+
+                <div className="bg-white rounded-lg p-3 space-y-1">
+                  <p className="text-xs text-gray-400">Geschatte marktwaarde</p>
+                  <p className="text-lg font-bold text-[#0D1F3C]">{euro(fundaAnalyse.marktwaarde)}</p>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium inline-block
+                    ${fundaAnalyse.vraagprijsOordeel === 'Scherp geprijsd' ? 'bg-emerald-100 text-emerald-700'
+                    : fundaAnalyse.vraagprijsOordeel === 'Marktconform' ? 'bg-blue-100 text-blue-700'
+                    : 'bg-amber-100 text-amber-700'}`}>
+                    {fundaAnalyse.vraagprijsOordeel}
+                  </span>
+                </div>
+
+                <div className="bg-white rounded-lg p-3">
+                  <p className="text-xs font-medium text-[#0D1F3C] mb-1 flex items-center gap-1">
+                    <Gavel className="w-3.5 h-3.5 text-[#1ABC9C]" /> Biedadvies
+                  </p>
+                  <p className="text-sm text-gray-700">{fundaAnalyse.biedadvies}</p>
+                </div>
+
+                {fundaAnalyse.pluspunten?.length > 0 && (
+                  <div className="bg-emerald-50 rounded-lg p-3">
+                    <p className="text-xs font-medium text-emerald-800 mb-1">Pluspunten</p>
+                    <ul className="space-y-0.5">
+                      {fundaAnalyse.pluspunten.map((p, i) => (
+                        <li key={i} className="text-xs text-emerald-700 flex gap-1.5">
+                          <CheckCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />{p}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {fundaAnalyse.aandachtspunten?.length > 0 && (
+                  <div className="bg-amber-50 rounded-lg p-3">
+                    <p className="text-xs font-medium text-amber-800 mb-1">Let op</p>
+                    <ul className="space-y-0.5">
+                      {fundaAnalyse.aandachtspunten.map((p, i) => (
+                        <li key={i} className="text-xs text-amber-700 flex gap-1.5">
+                          <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />{p}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <p className="text-xs text-gray-500 italic">{fundaAnalyse.samenvatting}</p>
+              </div>
+            )}
+
+            <FormField label={fundaGevonden ? 'Vraagprijs / marktwaarde (aanpasbaar)' : 'Vraagprijs'}
               type="number" min={0} prefix="€" placeholder="350000"
               value={fundaPrijs} onChange={e => setFundaPrijs(e.target.value)} />
 
