@@ -65,6 +65,7 @@ export function berekenResultaat(
   verplichtingen: Partial<VerplichtingenData>,
   woning: Partial<WoningData>,
   rentes: Record<number, number> = TOETSRENTES,
+  ltiNormen: LtiRij[] = LTI_NORMEN,
 ): Resultaat {
   const ti1 = berekenToetsinkomen(inkomen1);
   const ti2 = situatie.metPartner ? berekenToetsinkomen(inkomen2) : 0;
@@ -76,7 +77,7 @@ export function berekenResultaat(
   const toetsrente = rentes[periode] ?? rentes[10] ?? TOETSRENTES[10]!;
   const looptijdJaar = woning.looptijdJaar ?? 30;
 
-  const ltiFactor  = getLtiFactor(toetsinkomen, LTI_NORMEN);
+  const ltiFactor  = getLtiFactor(toetsinkomen, ltiNormen);
   const annFactor  = annuityFactor(toetsrente, looptijdJaar);
 
   // Max op basis van inkomen minus verplichtingen

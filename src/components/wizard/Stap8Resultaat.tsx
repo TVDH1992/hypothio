@@ -37,12 +37,12 @@ function Badge({ ok, label, sub }: { ok: boolean; label: string; sub?: string })
 const SCENARIO_PERIODES: RentevastePeriode[] = [10, 15, 20, 30];
 
 export function Stap8Resultaat() {
-  const { resultaat, situatie, inkomen1, inkomen2, woning, verplichtingen, rol, setStap, actueleRentes } = useWizard();
+  const { resultaat, situatie, inkomen1, inkomen2, woning, verplichtingen, rol, setStap, actueleRentes, actueleNormen } = useWizard();
   const { setTab } = useApp();
   if (!resultaat) return null;
 
   const scenarios = SCENARIO_PERIODES.map(p => {
-    const r = berekenResultaat(situatie, inkomen1, inkomen2, verplichtingen, { ...woning, rentevastePeriode: p }, actueleRentes);
+    const r = berekenResultaat(situatie, inkomen1, inkomen2, verplichtingen, { ...woning, rentevastePeriode: p }, actueleRentes, actueleNormen);
     return { periode: p, rente: actueleRentes[p] ?? TOETSRENTES[p]!, max: r.effectieveMaxHypotheek, maandlast: r.brutoMaandlast };
   });
 

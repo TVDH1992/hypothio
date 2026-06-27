@@ -3,11 +3,11 @@ import { useWizard } from '../../context/WizardContext';
 import { berekenResultaat } from '../../lib/berekening';
 
 export function Stap7Berekenen() {
-  const { situatie, inkomen1, inkomen2, verplichtingen, woning, setResultaat, volgende, actueleRentes } = useWizard();
+  const { situatie, inkomen1, inkomen2, verplichtingen, woning, setResultaat, volgende, actueleRentes, actueleNormen } = useWizard();
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      const resultaat = berekenResultaat(situatie, inkomen1, inkomen2, verplichtingen, woning, actueleRentes);
+      const resultaat = berekenResultaat(situatie, inkomen1, inkomen2, verplichtingen, woning, actueleRentes, actueleNormen);
       setResultaat(resultaat);
       volgende();
     }, 1800);
