@@ -17,6 +17,7 @@ import { ProfielScreen } from './components/screens/ProfielScreen';
 import { HomeScreen } from './components/screens/HomeScreen';
 import { AdminScreen } from './components/screens/AdminScreen';
 import { LandingPage } from './components/LandingPage';
+import { BevestigingScreen } from './components/BevestigingScreen';
 import { verwijderSessie } from './lib/profiel';
 import type { Sessie } from './types/profiel';
 
@@ -86,8 +87,10 @@ function AppShell({ sessie, onUitloggen }: { sessie: Sessie; onUitloggen: () => 
 }
 
 export default function App() {
-  const [sessie, setSessie] = useState<Sessie | null>(null);
-  const [laden, setLaden]   = useState(true);
+  const [sessie, setSessie]         = useState<Sessie | null>(null);
+  const [laden, setLaden]           = useState(true);
+  const isBevestiging = window.location.hash.includes('access_token') ||
+                        window.location.hash.includes('type=signup');
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -135,6 +138,10 @@ export default function App() {
         </div>
       </div>
     );
+  }
+
+  if (isBevestiging && !sessie) {
+    return <BevestigingScreen onBevestigd={() => window.location.replace('/')} />;
   }
 
   if (!sessie) {
