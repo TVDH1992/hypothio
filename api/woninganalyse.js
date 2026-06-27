@@ -3,7 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { adres, stad, type, wozWaarde, peildatum, oppervlakte, bouwjaar, kamers, energielabel, isNieuwbouw, prijstype, vraagprijs } = req.body ?? {};
+  const { adres, stad, type, wozWaarde, peildatum, oppervlakte, bouwjaar, kamers, slaapkamers, energielabel, isNieuwbouw, prijstype, vraagprijs } = req.body ?? {};
   if (!adres || !stad) return res.status(400).json({ error: 'Ontbrekende gegevens' });
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -15,6 +15,7 @@ export default async function handler(req, res) {
     oppervlakte ? `Woonoppervlakte: ${oppervlakte} m²` : null,
     bouwjaar ? `Bouwjaar: ${bouwjaar}` : null,
     kamers ? `Kamers: ${kamers}` : null,
+    slaapkamers ? `Slaapkamers: ${slaapkamers}` : null,
     energielabel ? `Energielabel: ${energielabel}` : null,
     vraagprijs ? `Vraagprijs: €${Number(vraagprijs).toLocaleString('nl-NL')} ${prijstype === 'von' ? '(v.o.n. — vrij op naam, geen overdrachtsbelasting)' : '(k.k. — koper betaalt kosten koper)'}` : null,
   ].filter(Boolean).join('\n');

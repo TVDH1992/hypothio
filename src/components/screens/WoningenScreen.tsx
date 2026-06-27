@@ -56,7 +56,7 @@ export function WoningenScreen() {
   const [fundaGevonden, setFundaGevonden] = useState<{ adres: string; stad: string; type?: string } | null>(null);
   const [fundaDetails, setFundaDetails] = useState<{
     prijs?: number; oppervlakte?: number; bouwjaar?: number;
-    kamers?: number; energielabel?: string; isNieuwbouw?: boolean; prijstype?: string;
+    kamers?: number; slaapkamers?: number; energielabel?: string; isNieuwbouw?: boolean; prijstype?: string;
   } | null>(null);
   const [fundaAnalyse, setFundaAnalyse] = useState<{
     marktwaarde: number;
@@ -181,6 +181,7 @@ export function WoningenScreen() {
           oppervlakte: details?.oppervlakte,
           bouwjaar: details?.bouwjaar,
           kamers: details?.kamers,
+          slaapkamers: details?.slaapkamers,
           energielabel: details?.energielabel,
           isNieuwbouw: details?.isNieuwbouw,
           prijstype: details?.prijstype,
@@ -405,8 +406,12 @@ export function WoningenScreen() {
                     {fundaDetails.oppervlakte && (
                       <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-lg">{fundaDetails.oppervlakte} m²</span>
                     )}
-                    {fundaDetails.kamers && (
-                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-lg">{fundaDetails.kamers} kamers</span>
+                    {(fundaDetails.slaapkamers || fundaDetails.kamers) && (
+                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-lg">
+                        {fundaDetails.slaapkamers
+                          ? `${fundaDetails.slaapkamers} slaapkamers`
+                          : `${fundaDetails.kamers} kamers`}
+                      </span>
                     )}
                     {fundaDetails.bouwjaar && (
                       <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-lg">Bouwjaar {fundaDetails.bouwjaar}</span>

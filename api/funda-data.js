@@ -55,8 +55,13 @@ function parseHtml(html) {
                      html.match(/[Ee]nergieklasse[\s\S]{0,50}?([A-G][+]{0,4})/);
   if (labelMatch) data.energielabel = labelMatch[1].toUpperCase();
 
-  // --- Kamers ---
-  const kamersMatch = html.match(/(\d+)\s*kamers?/i) ??
+  // --- Slaapkamers / kamers ---
+  const slaapMatch = html.match(/(\d+)\s*[Ss]laapkamers?/);
+  if (slaapMatch) {
+    const k = Number(slaapMatch[1]);
+    if (k > 0 && k < 20) data.slaapkamers = k;
+  }
+  const kamersMatch = html.match(/(\d+)\s*kamers?(?!\s*[Ss]laap)/i) ??
                       html.match(/aantal\s*kamers?[\s\S]{0,30}?(\d+)/i);
   if (kamersMatch) {
     const k = Number(kamersMatch[1]);
