@@ -145,12 +145,13 @@ export function WoningenScreen() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url }),
       });
-      if (fundaRes.ok) {
-        const d = await fundaRes.json();
+      const d = await fundaRes.json();
+      if (fundaRes.ok && !d.geblokkeerd) {
         details = d;
         setFundaDetails(d);
         if (d.prijs) setFundaPrijs(String(d.prijs));
       }
+      // Als geblokkeerd: stille fallback, prijs via Claude
     } catch { /* niet beschikbaar */ }
 
     // WOZ lookup via server (vermijdt CORS)
