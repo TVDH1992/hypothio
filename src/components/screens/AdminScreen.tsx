@@ -72,7 +72,7 @@ export function AdminScreen() {
           <p className="text-xs text-gray-400">Instellingen en beheer</p>
         </div>
         <a href="https://supabase.com/dashboard/project/ljsdvgwdktvepwbigklm" target="_blank" rel="noopener noreferrer"
-          className="flex items-center gap-1.5 text-xs text-[#8B35C0] hover:opacity-75 transition">
+          className="flex items-center gap-1.5 text-xs text-[#99248F] hover:opacity-75 transition">
           <ExternalLink className="w-3.5 h-3.5" /> Supabase
         </a>
       </div>
@@ -98,7 +98,7 @@ export function AdminScreen() {
           <div className="grid grid-cols-2 gap-3">
             {STATS.map(({ label, waarde, icon: Icon }) => (
               <div key={label} className="bg-white rounded-xl border border-gray-100 p-4">
-                <Icon className="w-5 h-5 text-[#8B35C0] mb-2" />
+                <Icon className="w-5 h-5 text-[#99248F] mb-2" />
                 <p className="text-xs text-gray-400">{label}</p>
                 <p className="text-sm font-bold text-[#0D1F3C] mt-0.5">{waarde}</p>
               </div>
@@ -129,7 +129,7 @@ export function AdminScreen() {
                       step="0.01"
                       min="0"
                       max="15"
-                      className="w-24 text-right py-1.5 px-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#8B35C0]"
+                      className="w-24 text-right py-1.5 px-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#99248F]"
                       value={bewerkt[r.id] ?? (r.rente * 100).toFixed(2)}
                       onChange={e => setBewerkt(prev => ({ ...prev, [r.id]: e.target.value }))}
                     />

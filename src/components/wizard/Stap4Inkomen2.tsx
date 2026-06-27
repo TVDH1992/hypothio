@@ -62,11 +62,11 @@ export function Stap4Inkomen2() {
             onClick={() => fileRef.current?.click()}
             disabled={uploadStatus === 'laden'}
             className={`w-full flex items-center justify-center gap-3 p-4 rounded-xl border-2 border-dashed transition cursor-pointer
-              ${uploadStatus === 'succes' ? 'border-emerald-400 bg-emerald-50' : 'border-gray-200 hover:border-[#8B35C0] hover:bg-[#8B35C0]/5'}`}
+              ${uploadStatus === 'succes' ? 'border-emerald-400 bg-emerald-50' : 'border-gray-200 hover:border-[#99248F] hover:bg-[#99248F]/5'}`}
           >
-            {uploadStatus === 'laden' && <Loader2 className="w-5 h-5 text-[#8B35C0] animate-spin" />}
+            {uploadStatus === 'laden' && <Loader2 className="w-5 h-5 text-[#99248F] animate-spin" />}
             {uploadStatus === 'succes' && <CheckCircle className="w-5 h-5 text-emerald-500" />}
-            {(uploadStatus === 'idle' || uploadStatus === 'fout') && <Upload className="w-5 h-5 text-[#8B35C0]" />}
+            {(uploadStatus === 'idle' || uploadStatus === 'fout') && <Upload className="w-5 h-5 text-[#99248F]" />}
             <div className="text-left">
               <p className={`text-sm font-medium ${uploadStatus === 'succes' ? 'text-emerald-700' : 'text-[#0D1F3C]'}`}>
                 {uploadStatus === 'laden' && 'Loonstrook lezen...'}

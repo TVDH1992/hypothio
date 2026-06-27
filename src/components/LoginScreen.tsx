@@ -62,7 +62,7 @@ export function LoginScreen({ onLogin }: Props) {
     <div className="min-h-screen bg-gray-50 flex flex-col" style={{ fontFamily: "'Inter', sans-serif" }}>
       <header className="bg-white border-b border-gray-100 px-4 py-4">
         <div className="max-w-xl mx-auto flex items-center gap-2">
-          <div className="w-8 h-8 bg-[#8B35C0] rounded-lg flex items-center justify-center">
+          <div className="w-8 h-8 bg-[#99248F] rounded-lg flex items-center justify-center">
             <span className="text-white font-bold text-sm">H</span>
           </div>
           <span className="font-bold text-[#0D1F3C]">Hypothio</span>

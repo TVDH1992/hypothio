@@ -83,7 +83,7 @@ export function Stap6Woning() {
                   onClick={() => updateWoning({ hypotheekvorm: val })}
                   className={`w-full p-3.5 rounded-xl border-2 text-left transition cursor-pointer
                     ${(woning.hypotheekvorm ?? 'annuitair') === val
-                      ? 'border-[#8B35C0] bg-[#8B35C0]/5'
+                      ? 'border-[#99248F] bg-[#99248F]/5'
                       : 'border-gray-200 hover:border-gray-300'}`}
                 >
                   <p className={`text-sm font-medium ${(woning.hypotheekvorm ?? 'annuitair') === val ? 'text-[#0D1F3C]' : 'text-gray-500'}`}>{lbl}</p>

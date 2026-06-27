@@ -27,7 +27,7 @@ export function FormField({ label, tooltip, error, prefix, suffix, className = '
         {prefix && <span className="absolute left-3 text-gray-400 text-sm pointer-events-none">{prefix}</span>}
         <input
           className={`w-full py-2.5 px-3 rounded-lg border border-gray-200 text-[#0D1F3C] bg-white
-            focus:outline-none focus:ring-2 focus:ring-[#8B35C0] focus:border-transparent transition
+            focus:outline-none focus:ring-2 focus:ring-[#99248F] focus:border-transparent transition
             placeholder:text-gray-300 ${prefix ? 'pl-7' : ''} ${suffix ? 'pr-14' : ''} ${error ? 'border-red-400' : ''} ${className}`}
           {...props}
           type={isNumeric ? 'text' : props.type}
@@ -63,7 +63,7 @@ export function SelectField({ label, tooltip, options, className = '', ...props 
       {tooltip && <p className="text-xs text-gray-400">{tooltip}</p>}
       <select
         className={`w-full py-2.5 px-3 rounded-lg border border-gray-200 text-[#0D1F3C] bg-white
-          focus:outline-none focus:ring-2 focus:ring-[#8B35C0] focus:border-transparent transition ${className}`}
+          focus:outline-none focus:ring-2 focus:ring-[#99248F] focus:border-transparent transition ${className}`}
         {...props}
       >
         {options.map(o => (
@@ -85,14 +85,14 @@ export function Toggle({ label, tooltip, checked, onChange }: ToggleProps) {
   return (
     <div
       className={`flex items-center justify-between p-3.5 rounded-xl border-2 transition cursor-pointer
-        ${checked ? 'border-[#8B35C0] bg-[#8B35C0]/5' : 'border-gray-200 hover:border-gray-300'}`}
+        ${checked ? 'border-[#99248F] bg-[#99248F]/5' : 'border-gray-200 hover:border-gray-300'}`}
       onClick={() => onChange(!checked)}
     >
       <div>
         <p className="text-sm font-medium text-[#0D1F3C]">{label}</p>
         {tooltip && <p className="text-xs text-gray-400 mt-0.5">{tooltip}</p>}
       </div>
-      <div className={`relative shrink-0 w-11 h-6 rounded-full transition-colors ml-3 ${checked ? 'bg-[#8B35C0]' : 'bg-gray-200'}`}>
+      <div className={`relative shrink-0 w-11 h-6 rounded-full transition-colors ml-3 ${checked ? 'bg-[#99248F]' : 'bg-gray-200'}`}>
         <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${checked ? 'translate-x-5' : ''}`} />
       </div>
     </div>
@@ -112,7 +112,7 @@ export function OptionCard({ selected, onClick, children, className = '' }: Opti
       type="button"
       onClick={onClick}
       className={`w-full p-4 rounded-xl border-2 text-left transition cursor-pointer
-        ${selected ? 'border-[#8B35C0] bg-[#8B35C0]/5' : 'border-gray-200 hover:border-gray-300'} ${className}`}
+        ${selected ? 'border-[#99248F] bg-[#99248F]/5' : 'border-gray-200 hover:border-gray-300'} ${className}`}
     >
       {children}
     </button>

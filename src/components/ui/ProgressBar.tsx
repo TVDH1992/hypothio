@@ -14,7 +14,7 @@ export function ProgressBar({ huidigeStap, totaalStappen, label }: ProgressBarPr
       </div>
       <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
         <div
-          className="h-full bg-[#8B35C0] rounded-full transition-all duration-500"
+          className="h-full bg-[#99248F] rounded-full transition-all duration-500"
           style={{ width: `${pct}%` }}
         />
       </div>

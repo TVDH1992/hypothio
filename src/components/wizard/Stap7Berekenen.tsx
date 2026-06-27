@@ -36,7 +36,7 @@ export function Stap7Berekenen() {
           <circle cx="48" cy="48" r="40" fill="none" stroke="#f3f4f6" strokeWidth="8" />
           <circle
             cx="48" cy="48" r="40" fill="none"
-            stroke="#8B35C0" strokeWidth="8"
+            stroke="#99248F" strokeWidth="8"
             strokeLinecap="round"
             strokeDasharray={`${2 * Math.PI * 40}`}
             strokeDashoffset={`${2 * Math.PI * 40 * (1 - pct / 100)}`}
@@ -63,7 +63,7 @@ export function Stap7Berekenen() {
               className={`flex items-center gap-3 transition-all duration-300
                 ${done ? 'opacity-100' : active ? 'opacity-60' : 'opacity-20'}`}
             >
-              <CheckCircle className={`w-4 h-4 shrink-0 transition-colors duration-300 ${done ? 'text-[#8B35C0]' : 'text-gray-300'}`} />
+              <CheckCircle className={`w-4 h-4 shrink-0 transition-colors duration-300 ${done ? 'text-[#99248F]' : 'text-gray-300'}`} />
               <span className={`text-sm transition-colors duration-300 ${done ? 'text-[#0D1F3C] font-medium' : 'text-gray-400'}`}>
                 {label}
               </span>

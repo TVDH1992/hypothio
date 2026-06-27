@@ -29,8 +29,8 @@ export function HomeScreen() {
 
       {/* Hero */}
       <div className="text-center space-y-3 pt-2">
-        <div className="w-16 h-16 bg-[#8B35C0]/10 rounded-2xl flex items-center justify-center mx-auto">
-          <Home className="w-8 h-8 text-[#8B35C0]" />
+        <div className="w-16 h-16 bg-[#99248F]/10 rounded-2xl flex items-center justify-center mx-auto">
+          <Home className="w-8 h-8 text-[#99248F]" />
         </div>
         <h1 className="text-2xl font-bold text-[#0D1F3C] leading-tight">
           Hoeveel hypotheek<br />kun jij krijgen?
@@ -56,7 +56,7 @@ export function HomeScreen() {
             </div>
             <div className="ml-auto flex items-end">
               {resultaat.nhgMogelijk && (
-                <span className="text-xs bg-[#8B35C0]/20 text-[#8B35C0] px-2 py-1 rounded-full font-medium">NHG</span>
+                <span className="text-xs bg-[#99248F]/20 text-[#99248F] px-2 py-1 rounded-full font-medium">NHG</span>
               )}
             </div>
           </div>
@@ -68,7 +68,7 @@ export function HomeScreen() {
             </button>
             <button type="button"
               onClick={() => setStap(1)}
-              className="flex-1 bg-[#8B35C0] hover:bg-[#8B35C0]/90 text-white text-sm font-medium py-2.5 rounded-xl transition cursor-pointer">
+              className="flex-1 bg-[#99248F] hover:bg-[#99248F]/90 text-white text-sm font-medium py-2.5 rounded-xl transition cursor-pointer">
               Herbereken
             </button>
           </div>
@@ -87,7 +87,7 @@ export function HomeScreen() {
           { icon: Star,        label: 'NHG 2026',    sub: `Grens ${euro(NHG_GRENS_2026)}` },
         ].map(({ icon: Icon, label, sub }) => (
           <div key={label} className="bg-white rounded-xl border border-gray-100 p-3 text-center">
-            <Icon className="w-5 h-5 text-[#8B35C0] mx-auto mb-1.5" />
+            <Icon className="w-5 h-5 text-[#99248F] mx-auto mb-1.5" />
             <p className="text-xs font-semibold text-[#0D1F3C]">{label}</p>
             <p className="text-[10px] text-gray-400 mt-0.5">{sub}</p>
           </div>
@@ -106,9 +106,9 @@ export function HomeScreen() {
             if (!rente) return null;
             return (
               <div key={p}
-                className={`flex items-center justify-between py-2.5 px-3 rounded-xl ${highlight ? 'bg-[#8B35C0]/5 border border-[#8B35C0]/20' : 'bg-gray-50'}`}>
+                className={`flex items-center justify-between py-2.5 px-3 rounded-xl ${highlight ? 'bg-[#99248F]/5 border border-[#99248F]/20' : 'bg-gray-50'}`}>
                 <span className={`text-sm ${highlight ? 'font-semibold text-[#0D1F3C]' : 'text-gray-600'}`}>{label} vast</span>
-                <span className={`text-sm font-bold ${highlight ? 'text-[#8B35C0]' : 'text-[#0D1F3C]'}`}>
+                <span className={`text-sm font-bold ${highlight ? 'text-[#99248F]' : 'text-[#0D1F3C]'}`}>
                   {(rente * 100).toFixed(2).replace('.', ',')}%
                 </span>
               </div>
@@ -144,17 +144,17 @@ export function HomeScreen() {
       {resultaat && (
         <button type="button"
           onClick={() => setTab('woningen')}
-          className="w-full flex items-center justify-between bg-white border border-gray-100 rounded-2xl p-4 hover:border-[#8B35C0]/30 transition cursor-pointer group">
+          className="w-full flex items-center justify-between bg-white border border-gray-100 rounded-2xl p-4 hover:border-[#99248F]/30 transition cursor-pointer group">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#8B35C0]/10 rounded-xl flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-[#8B35C0]" />
+            <div className="w-10 h-10 bg-[#99248F]/10 rounded-xl flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 text-[#99248F]" />
             </div>
             <div className="text-left">
               <p className="text-sm font-semibold text-[#0D1F3C]">Woning analyseren</p>
               <p className="text-xs text-gray-400">WOZ-waarde opzoeken + biedadvies</p>
             </div>
           </div>
-          <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-[#8B35C0] transition" />
+          <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-[#99248F] transition" />
         </button>
       )}
 

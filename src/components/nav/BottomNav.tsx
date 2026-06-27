@@ -35,11 +35,11 @@ export function BottomNav({ isAdmin }: Props) {
               onClick={() => navigeer(t)}
               className="flex-1 flex flex-col items-center justify-center py-2.5 gap-1 transition cursor-pointer relative"
             >
-              <Icon className={`w-5 h-5 transition-colors ${actief ? 'text-[#8B35C0]' : 'text-gray-400'}`} />
-              <span className={`text-[10px] font-medium transition-colors ${actief ? 'text-[#8B35C0]' : 'text-gray-400'}`}>
+              <Icon className={`w-5 h-5 transition-colors ${actief ? 'text-[#99248F]' : 'text-gray-400'}`} />
+              <span className={`text-[10px] font-medium transition-colors ${actief ? 'text-[#99248F]' : 'text-gray-400'}`}>
                 {label}
               </span>
-              {actief && <span className="absolute bottom-0 w-8 h-0.5 bg-[#8B35C0] rounded-t-full" />}
+              {actief && <span className="absolute bottom-0 w-8 h-0.5 bg-[#99248F] rounded-t-full" />}
             </button>
           );
         })}

@@ -38,7 +38,7 @@ function AppShell({ sessie, onUitloggen }: { sessie: Sessie; onUitloggen: () => 
       <header className="bg-white border-b border-gray-100 px-4 py-4 sticky top-0 z-40">
         <div className="max-w-xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-[#8B35C0] rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-[#99248F] rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">H</span>
             </div>
             <span className="font-bold text-[#0D1F3C]">Hypothio</span>
@@ -131,7 +131,7 @@ export default function App() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center" style={{ fontFamily: "'Inter', sans-serif" }}>
         <div className="text-center space-y-3">
-          <div className="w-10 h-10 bg-[#8B35C0] rounded-xl flex items-center justify-center mx-auto">
+          <div className="w-10 h-10 bg-[#99248F] rounded-xl flex items-center justify-center mx-auto">
             <span className="text-white font-bold">H</span>
           </div>
           <p className="text-sm text-gray-400">Laden...</p>
