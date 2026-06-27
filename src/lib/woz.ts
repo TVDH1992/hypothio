@@ -8,6 +8,8 @@ export interface WozResultaat {
   wozWaarde: number;
   peildatum: string;
   nummeraanduidingId: string;
+  bouwjaar?: number | null;
+  oppervlakte?: number | null;
 }
 
 const PDOK_URL = 'https://api.pdok.nl/bzk/locatieserver/search/v3_1/free';

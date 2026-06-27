@@ -154,11 +154,15 @@ export function WoningenScreen() {
       // Als geblokkeerd: stille fallback, prijs via Claude
     } catch { /* niet beschikbaar */ }
 
-    // WOZ lookup via server (vermijdt CORS)
+    // WOZ + BAG data via server (bouwjaar, m² ook gratis meegekregen)
     try {
       const woz = await haalWozOpAdres(`${parsed.adres} ${parsed.stad}`);
       wozWaarde = woz.wozWaarde;
       peildatum = woz.peildatum;
+      // BAG data als funda-data die niet heeft
+      if (!details?.bouwjaar && woz.bouwjaar) details = { ...details, bouwjaar: woz.bouwjaar };
+      if (!details?.oppervlakte && woz.oppervlakte) details = { ...details, oppervlakte: woz.oppervlakte };
+      if (details !== null) setFundaDetails({ ...details });
     } catch { /* WOZ niet beschikbaar */ }
 
     setFundaGevonden({ adres: parsed.adres, stad: parsed.stad, type });
