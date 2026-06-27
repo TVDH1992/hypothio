@@ -20,6 +20,14 @@ export function FormField({ label, tooltip, error, prefix, suffix, className = '
             focus:outline-none focus:ring-2 focus:ring-[#1ABC9C] focus:border-transparent transition
             placeholder:text-gray-300 ${prefix ? 'pl-7' : ''} ${suffix ? 'pr-14' : ''} ${error ? 'border-red-400' : ''} ${className}`}
           {...props}
+          type={props.type === 'number' ? 'text' : props.type}
+          inputMode={props.type === 'number' ? 'numeric' : undefined}
+          onChange={e => {
+            if (props.type === 'number') {
+              e.target.value = e.target.value.replace(/^0+(\d)/, '$1').replace(/[^\d]/g, '');
+            }
+            props.onChange?.(e);
+          }}
         />
         {suffix && <span className="absolute right-3 text-gray-400 text-sm pointer-events-none">{suffix}</span>}
       </div>
