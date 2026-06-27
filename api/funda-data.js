@@ -87,13 +87,13 @@ function parseHtml(html) {
   }
 
   if (!data.oppervlakte) {
+    // Specifiek woonoppervlakte — NIET perceeloppervlakte of bruto vloeroppervlak
     const m = zoek([
       /"woonoppervlakte"\s*:\s*(\d{2,4})/i,
       /"gebruiksoppervlakteWonen"\s*:\s*(\d{2,4})/i,
-      /(\d{2,4})\s*m²\s*wonen/i,
-      /(\d{2,4})\s*m²/,
+      /"livingArea"\s*:\s*(\d{2,4})/i,
     ]);
-    if (m) { const v = Number(m); if (v > 10 && v < 2000) data.oppervlakte = v; }
+    if (m) { const v = Number(m); if (v > 10 && v < 1000) data.oppervlakte = v; }
   }
 
   if (!data.energielabel) {
@@ -122,8 +122,12 @@ function parseHtml(html) {
     if (m) { const v = Number(m); if (v > 0 && v < 20) data.kamers = v; }
   }
 
-  data.isNieuwbouw = /nieuwbouw|v\.o\.n\.|vrij\s+op\s+naam/i.test(html);
-  data.prijstype = /v\.o\.n\./i.test(html) ? 'von' : 'kk';
+  // Nieuwbouw/VON alleen via JSON-signalen — "nieuwbouw" staat in Funda-nav op ELKE pagina
+  const vonInJson = /"(?:prijstype|priceType|aanbodType)"\s*:\s*"[^"]*(?:von|vrij)[^"]*"/i.test(html)
+    || /"isNieuwbouw"\s*:\s*true/i.test(html)
+    || /"nieuwbouw"\s*:\s*true/i.test(html);
+  data.prijstype = vonInJson ? 'von' : 'kk';
+  data.isNieuwbouw = vonInJson;
 
   return data;
 }
