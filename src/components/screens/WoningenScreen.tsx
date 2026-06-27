@@ -160,9 +160,8 @@ export function WoningenScreen() {
 
   function voegFundaToe() {
     const parsed = fundaGevonden ?? parseFundaUrl(fundaUrl);
-    const prijs = Number(fundaPrijs);
     if (!parsed.adres) { setFundaFout('Geen geldige Funda URL.'); return; }
-    if (!prijs || prijs < 10_000) { setFundaFout('Vul een vraagprijs in.'); return; }
+    const prijs = Number(fundaPrijs) || fundaAnalyse?.marktwaarde || 0;
     voegWoningToe({
       id: Date.now().toString(),
       fundaUrl: fundaUrl.trim(),
@@ -408,8 +407,11 @@ export function WoningenScreen() {
             )}
 
             <FormField label={fundaGevonden ? 'Vraagprijs / marktwaarde (aanpasbaar)' : 'Vraagprijs'}
-              type="number" min={0} prefix="€" placeholder="350000"
+              type="number" min={0} prefix="€" placeholder="Typ vraagprijs..."
               value={fundaPrijs} onChange={e => setFundaPrijs(e.target.value)} />
+            {fundaGevonden && !fundaPrijs && !fundaLaden && (
+              <p className="text-xs text-amber-600">WOZ niet beschikbaar — typ de vraagprijs handmatig of sla op zonder prijs.</p>
+            )}
 
             {fundaFout && <p className="text-xs text-red-500">{fundaFout}</p>}
             <div className="flex gap-2">
