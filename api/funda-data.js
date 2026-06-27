@@ -47,6 +47,34 @@ async function zoekEchteUrl(invoerUrl) {
   return null;
 }
 
+function parseJsonStr(str, data) {
+  if (!data.prijs) {
+    const m = str.match(/"(?:koopprijs|vraagprijs|price|koopsomEuros|koopPrijs|listPrice|salePrice|amount|koopsom)"\s*:\s*(\d{5,7})/i)
+      ?? str.match(/"[^"]{0,30}(?:prijs|price|koopsom|bedrag)[^"]{0,30}"\s*:\s*(\d{5,7})/i);
+    if (m) { const v = Number(m[1]); if (v > 50000 && v < 5_000_000) data.prijs = v; }
+  }
+  if (!data.bouwjaar) {
+    const m = str.match(/"[^"]{0,20}(?:bouwjaar|constructionYear|yearBuilt|bouwYear)[^"]{0,20}"\s*:\s*(\d{4})/i);
+    if (m) { const y = Number(m[1]); if (y > 1800 && y <= new Date().getFullYear() + 5) data.bouwjaar = y; }
+  }
+  if (!data.oppervlakte) {
+    const m = str.match(/"[^"]{0,30}(?:woonoppervlakte|oppervlakte|livingArea|usableArea|gebruiksoppervlak)[^"]{0,30}"\s*:\s*(\d{2,4})/i);
+    if (m) { const v = Number(m[1]); if (v > 10 && v < 2000) data.oppervlakte = v; }
+  }
+  if (!data.energielabel) {
+    const m = str.match(/"[^"]{0,20}(?:energieklasse|energielabel|energyLabel|energyClass)[^"]{0,20}"\s*:\s*"([A-G][+]{0,4})"/i);
+    if (m) data.energielabel = m[1].toUpperCase();
+  }
+  if (!data.slaapkamers) {
+    const m = str.match(/"[^"]{0,20}(?:slaapkamers|bedrooms|aantalSlaap)[^"]{0,20}"\s*:\s*(\d+)/i);
+    if (m) { const v = Number(m[1]); if (v > 0 && v < 20) data.slaapkamers = v; }
+  }
+  if (!data.kamers) {
+    const m = str.match(/"[^"]{0,20}(?:aantalKamers|kamers|rooms|numberOfRooms)[^"]{0,20}"\s*:\s*(\d+)/i);
+    if (m) { const v = Number(m[1]); if (v > 0 && v < 20) data.kamers = v; }
+  }
+}
+
 function parseHtml(html) {
   const data = {};
 
@@ -68,59 +96,25 @@ function parseHtml(html) {
     } catch { }
   }
 
-  // 2. __NEXT_DATA__ — Funda is een Next.js app, alle paginadata zit hier in
-  const nextMatch = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
-  if (nextMatch) {
+  // 2. Funda gebruikt Nuxt.js — zoek in alle inline scripts naar property data
+  // Nuxt embed: window.__NUXT__={...} of <script type="application/json" id="__NUXT_DATA__">
+  const scriptBlocks = [...html.matchAll(/<script[^>]*>([\s\S]{200,}?)<\/script>/gi)]
+    .map(m => m[1]);
+
+  for (const block of scriptBlocks) {
+    // Sla JSON-LD en externe scripts over
+    if (block.includes('"@context"') || block.includes('src=')) continue;
     try {
-      // Werken met de JSON-string is sneller dan recursief object doorzoeken
-      const str = JSON.stringify(JSON.parse(nextMatch[1]));
-
-      if (!data.prijs) {
-        const pp = [
-          /"koopprijs"\s*:\s*(\d{5,7})/,
-          /"vraagprijs"\s*:\s*(\d{5,7})/,
-          /"price"\s*:\s*(\d{5,7})/,
-          /"koopsomEuros"\s*:\s*(\d{5,7})/,
-        ];
-        for (const p of pp) {
-          const m = str.match(p);
-          if (m) { const v = Number(m[1]); if (v > 50000 && v < 5_000_000) { data.prijs = v; break; } }
-        }
-      }
-
-      if (!data.bouwjaar) {
-        const m = str.match(/"bouwjaar"\s*:\s*(\d{4})/);
-        if (m) { const y = Number(m[1]); if (y > 1800 && y <= new Date().getFullYear() + 5) data.bouwjaar = y; }
-      }
-
-      if (!data.oppervlakte) {
-        const m = str.match(/"woonoppervlakte"\s*:\s*(\d{2,4})/)
-          ?? str.match(/"gebruiksoppervlakteWonen"\s*:\s*(\d{2,4})/)
-          ?? str.match(/"oppervlakte"\s*:\s*(\d{2,4})/);
-        if (m) { const v = Number(m[1]); if (v > 10 && v < 2000) data.oppervlakte = v; }
-      }
-
-      if (!data.energielabel) {
-        const m = str.match(/"energieklasse"\s*:\s*"([A-G][+]{0,4})"/i)
-          ?? str.match(/"energielabel"\s*:\s*"([A-G][+]{0,4})"/i)
-          ?? str.match(/"energieklasseLabel"\s*:\s*"([A-G][+]{0,4})"/i);
-        if (m) data.energielabel = m[1].toUpperCase();
-      }
-
-      if (!data.slaapkamers) {
-        const m = str.match(/"aantalSlaapkamers"\s*:\s*(\d+)/)
-          ?? str.match(/"aantalslaapkamers"\s*:\s*(\d+)/)
-          ?? str.match(/"slaapkamers"\s*:\s*(\d+)/);
-        if (m) { const v = Number(m[1]); if (v > 0 && v < 20) data.slaapkamers = v; }
-      }
-
-      if (!data.kamers) {
-        const m = str.match(/"aantalKamers"\s*:\s*(\d+)/)
-          ?? str.match(/"aantalkamers"\s*:\s*(\d+)/);
-        if (m) { const v = Number(m[1]); if (v > 0 && v < 20) data.kamers = v; }
-      }
-
-    } catch { }
+      // Probeer als JSON (Nuxt data payload)
+      const str = block.replace(/^[\s\S]*?(\{|\[)/, '$1').replace(/[;\s]+$/, '');
+      const parsed = JSON.parse(str);
+      const s = JSON.stringify(parsed);
+      parseJsonStr(s, data);
+      if (data.prijs) break;
+    } catch {
+      // Geen geldig JSON — zoek toch naar patronen in de script tekst
+      parseJsonStr(block, data);
+    }
   }
 
   // 3. HTML regex fallback voor prijs
