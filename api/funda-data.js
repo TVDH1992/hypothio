@@ -75,12 +75,21 @@ async function zoekEchteUrl(invoerUrl) {
 function parseHtml(html) {
   const data = {};
 
-  // Prijs: "389.000 k.k." of "895.000 v.o.n."
-  const prijsMatch = html.match(/([0-9]{2,4}\.?[0-9]{3})\s*(?:k\.k|v\.o\.n)/i)
-                  ?? html.match(/€\s*([0-9]{2,4}\.?[0-9]{3})/);
-  if (prijsMatch) {
-    const p = Number(prijsMatch[1].replace(/\./g, ''));
-    if (p > 50000 && p < 5000000) data.prijs = p;
+  // Prijs: meerdere patronen, meest specifiek eerst
+  const prijsPatterns = [
+    /€\s*([0-9]{2,4}\.[0-9]{3})\s*(?:k\.k|v\.o\.n)/i,   // "€ 425.000 k.k."
+    /([0-9]{2,4}\.[0-9]{3})\s*(?:k\.k|v\.o\.n)/i,        // "425.000 k.k."
+    /koopprijs[^>]*>\s*€?\s*([0-9]{2,4}\.?[0-9]{3})/i,   // "Koopprijs 425000"
+    /"koopprijs"\s*:\s*([0-9]+)/i,                         // JSON "koopprijs":425000
+    /"price"\s*:\s*"?([0-9]+)"?/i,                         // JSON "price":425000
+    /vraagprijs[^>]*>\s*€?\s*([0-9]{2,4}\.?[0-9]{3})/i,  // "Vraagprijs 425.000"
+  ];
+  for (const pattern of prijsPatterns) {
+    const m = html.match(pattern);
+    if (m) {
+      const p = Number(m[1].replace(/\./g, ''));
+      if (p > 50000 && p < 5000000) { data.prijs = p; break; }
+    }
   }
 
   // Bouwjaar

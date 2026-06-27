@@ -191,7 +191,7 @@ export function WoningenScreen() {
       if (analyseRes.ok) {
         const analyse = await analyseRes.json();
         setFundaAnalyse(analyse);
-        if (analyse.marktwaarde > 0 && !details?.prijs) setFundaPrijs(String(analyse.marktwaarde));
+        // Prijsveld alleen met echte Funda prijs vullen, nooit met Claude schatting
       } else {
         const err = await analyseRes.json().catch(() => ({}));
         setFundaAnalyseFout(err.error ?? `Analyse mislukt (${analyseRes.status})`);
@@ -514,11 +514,15 @@ export function WoningenScreen() {
               </div>
             )}
 
-            <FormField label={fundaGevonden ? 'Vraagprijs / marktwaarde (aanpasbaar)' : 'Vraagprijs'}
-              type="number" min={0} prefix="€" placeholder="Typ vraagprijs..."
+            <FormField
+              label={fundaPrijs ? 'Vraagprijs (van Funda)' : 'Vraagprijs (handmatig invullen)'}
+              tooltip={!fundaPrijs && fundaAnalyse?.marktwaarde ? `Geschatte marktwaarde door AI: € ${fundaAnalyse.marktwaarde.toLocaleString('nl-NL')}` : undefined}
+              type="number" min={0} prefix="€" placeholder="bijv. 385000"
               value={fundaPrijs} onChange={e => setFundaPrijs(e.target.value)} />
             {fundaGevonden && !fundaPrijs && !fundaLaden && !fundaAnalyseLaden && (
-              <p className="text-xs text-amber-600">Prijs niet automatisch gevonden — typ de vraagprijs handmatig of sla op zonder prijs.</p>
+              <p className="text-xs text-amber-600">
+                Vraagprijs niet automatisch gevonden — typ hem handmatig in{fundaAnalyse?.marktwaarde ? ` (AI schat marktwaarde op € ${fundaAnalyse.marktwaarde.toLocaleString('nl-NL')})` : ''}.
+              </p>
             )}
 
             {fundaFout && <p className="text-xs text-red-500">{fundaFout}</p>}
