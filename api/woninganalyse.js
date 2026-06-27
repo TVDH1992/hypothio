@@ -31,11 +31,17 @@ Geef een praktische analyse in dit exacte JSON formaat (geen extra tekst):
   "samenvatting": "<2 zinnen praktisch advies voor de koper>"
 }`;
 
-  const message = await client.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 600,
-    messages: [{ role: 'user', content: prompt }],
-  });
+  let message;
+  try {
+    message = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 600,
+      messages: [{ role: 'user', content: prompt }],
+    });
+  } catch (e) {
+    const msg = e?.message ?? String(e);
+    return res.status(500).json({ error: `Claude API fout: ${msg}` });
+  }
 
   const tekst = message.content[0]?.text ?? '';
   const jsonMatch = tekst.match(/\{[\s\S]*\}/);

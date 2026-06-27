@@ -51,6 +51,8 @@ export function WoningenScreen() {
   const [fundaPrijs, setFundaPrijs] = useState('');
   const [fundaFout, setFundaFout] = useState('');
   const [fundaLaden, setFundaLaden] = useState(false);
+  const [fundaAnalyseLaden, setFundaAnalyseLaden] = useState(false);
+  const [fundaAnalyseFout, setFundaAnalyseFout] = useState('');
   const [fundaGevonden, setFundaGevonden] = useState<{ adres: string; stad: string; type?: string } | null>(null);
   const [fundaAnalyse, setFundaAnalyse] = useState<{
     marktwaarde: number;
@@ -119,6 +121,7 @@ export function WoningenScreen() {
     setFundaFout('');
     setFundaGevonden(null);
     setFundaAnalyse(null);
+    setFundaAnalyseFout('');
     setFundaPrijs('');
     const parsed = parseFundaUrl(url);
     if (!parsed.geldig || !url.includes('funda.nl')) return;
@@ -153,8 +156,11 @@ export function WoningenScreen() {
     } catch { /* WOZ niet beschikbaar */ }
 
     setFundaGevonden({ adres: parsed.adres, stad: parsed.stad, type });
+    setFundaLaden(false);
 
     // Claude analyse — apart zodat WOZ falen het niet blokkeert
+    setFundaAnalyseLaden(true);
+    setFundaAnalyseFout('');
     try {
       const analyseRes = await fetch('/api/woninganalyse', {
         method: 'POST',
@@ -164,11 +170,16 @@ export function WoningenScreen() {
       if (analyseRes.ok) {
         const analyse = await analyseRes.json();
         setFundaAnalyse(analyse);
-        if (analyse.marktwaarde && !wozWaarde) setFundaPrijs(String(analyse.marktwaarde));
+        if (analyse.marktwaarde && !fundaPrijs) setFundaPrijs(String(analyse.marktwaarde));
+      } else {
+        const err = await analyseRes.json().catch(() => ({}));
+        setFundaAnalyseFout(err.error ?? `Analyse mislukt (${analyseRes.status})`);
       }
-    } catch { /* Claude niet beschikbaar */ }
-
-    setFundaLaden(false);
+    } catch {
+      setFundaAnalyseFout('Analyse niet beschikbaar — controleer ANTHROPIC_API_KEY in Vercel.');
+    } finally {
+      setFundaAnalyseLaden(false);
+    }
   }
 
   function voegFundaToe() {
@@ -357,7 +368,7 @@ export function WoningenScreen() {
 
             {fundaLaden && (
               <div className="flex items-center gap-2 py-2 text-sm text-[#1ABC9C]">
-                <Loader2 className="w-4 h-4 animate-spin" /> Woning analyseren...
+                <Loader2 className="w-4 h-4 animate-spin" /> Adres opzoeken...
               </div>
             )}
 
@@ -367,7 +378,20 @@ export function WoningenScreen() {
               </div>
             )}
 
-            {fundaAnalyse && !fundaLaden && (
+            {fundaAnalyseLaden && (
+              <div className="flex items-center gap-2 py-2 text-sm text-[#1ABC9C]">
+                <Loader2 className="w-4 h-4 animate-spin" /> AI analyseert woning...
+              </div>
+            )}
+
+            {fundaAnalyseFout && !fundaAnalyseLaden && (
+              <div className="flex gap-2 items-start p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                <p className="text-xs">{fundaAnalyseFout}</p>
+              </div>
+            )}
+
+            {fundaAnalyse && !fundaAnalyseLaden && (
               <div className="space-y-3 bg-gray-50 rounded-xl p-4">
                 <p className="text-xs font-semibold text-[#0D1F3C]">Woninganalyse</p>
 
@@ -422,8 +446,8 @@ export function WoningenScreen() {
             <FormField label={fundaGevonden ? 'Vraagprijs / marktwaarde (aanpasbaar)' : 'Vraagprijs'}
               type="number" min={0} prefix="€" placeholder="Typ vraagprijs..."
               value={fundaPrijs} onChange={e => setFundaPrijs(e.target.value)} />
-            {fundaGevonden && !fundaPrijs && !fundaLaden && (
-              <p className="text-xs text-amber-600">WOZ niet beschikbaar — typ de vraagprijs handmatig of sla op zonder prijs.</p>
+            {fundaGevonden && !fundaPrijs && !fundaLaden && !fundaAnalyseLaden && (
+              <p className="text-xs text-amber-600">Prijs niet automatisch gevonden — typ de vraagprijs handmatig of sla op zonder prijs.</p>
             )}
 
             {fundaFout && <p className="text-xs text-red-500">{fundaFout}</p>}
