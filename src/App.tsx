@@ -15,7 +15,8 @@ import { Stap8Resultaat } from './components/wizard/Stap8Resultaat';
 import { WoningenScreen } from './components/screens/WoningenScreen';
 import { ProfielScreen } from './components/screens/ProfielScreen';
 import { HomeScreen } from './components/screens/HomeScreen';
-import { LoginScreen } from './components/LoginScreen';
+import { AdminScreen } from './components/screens/AdminScreen';
+import { LandingPage } from './components/LandingPage';
 import { verwijderSessie } from './lib/profiel';
 import type { Sessie } from './types/profiel';
 
@@ -24,15 +25,15 @@ const STAP_LABELS: Record<number, string> = {
   5: 'Verplichtingen', 6: 'De woning', 7: 'Berekenen',
 };
 
-function AppShell({ onUitloggen }: { onUitloggen: () => void }) {
+function AppShell({ sessie, onUitloggen }: { sessie: Sessie; onUitloggen: () => void }) {
   const { stap } = useWizard();
   const { tab } = useApp();
+  const isAdmin = sessie.rol === 'admin';
   const toonVoortgang = tab === 'berekenen' && stap > 1 && stap < 8;
   const stapLabel = STAP_LABELS[stap];
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Inter', sans-serif" }}>
-      {/* Header */}
       <header className="bg-white border-b border-gray-100 px-4 py-4 sticky top-0 z-40">
         <div className="max-w-xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -41,13 +42,17 @@ function AppShell({ onUitloggen }: { onUitloggen: () => void }) {
             </div>
             <span className="font-bold text-[#0D1F3C]">Hypothio</span>
           </div>
-          {toonVoortgang && stapLabel && (
-            <span className="text-xs text-gray-400">{stapLabel}</span>
-          )}
+          <div className="flex items-center gap-3">
+            {toonVoortgang && stapLabel && (
+              <span className="text-xs text-gray-400">{stapLabel}</span>
+            )}
+            {tab === 'admin' && (
+              <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">Admin</span>
+            )}
+          </div>
         </div>
       </header>
 
-      {/* Voortgangsbalk wizard */}
       {toonVoortgang && (
         <div className="bg-white border-b border-gray-100 px-4 py-3 sticky top-[65px] z-30">
           <div className="max-w-xl mx-auto">
@@ -56,7 +61,6 @@ function AppShell({ onUitloggen }: { onUitloggen: () => void }) {
         </div>
       )}
 
-      {/* Content */}
       <main className="max-w-xl mx-auto px-4 py-8 pb-28">
         {tab === 'berekenen' && (
           <>
@@ -73,9 +77,10 @@ function AppShell({ onUitloggen }: { onUitloggen: () => void }) {
         )}
         {tab === 'woningen' && <WoningenScreen />}
         {tab === 'profiel'  && <ProfielScreen onUitloggen={onUitloggen} />}
+        {tab === 'admin' && isAdmin && <AdminScreen />}
       </main>
 
-      <BottomNav />
+      <BottomNav isAdmin={isAdmin} />
     </div>
   );
 }
@@ -85,24 +90,24 @@ export default function App() {
   const [laden, setLaden]   = useState(true);
 
   useEffect(() => {
-    // Herstel sessie bij refresh
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         setSessie({
           naam: session.user.user_metadata?.naam ?? session.user.email!.split('@')[0],
           email: session.user.email!,
+          rol: session.user.user_metadata?.role === 'admin' ? 'admin' : 'gebruiker',
           aangemaakt: new Date(session.user.created_at).toLocaleDateString('nl-NL'),
         });
       }
       setLaden(false);
     });
 
-    // Luister naar login/logout events
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         setSessie({
           naam: session.user.user_metadata?.naam ?? session.user.email!.split('@')[0],
           email: session.user.email!,
+          rol: session.user.user_metadata?.role === 'admin' ? 'admin' : 'gebruiker',
           aangemaakt: new Date(session.user.created_at).toLocaleDateString('nl-NL'),
         });
       } else {
@@ -133,13 +138,13 @@ export default function App() {
   }
 
   if (!sessie) {
-    return <LoginScreen onLogin={setSessie} />;
+    return <LandingPage onLogin={setSessie} />;
   }
 
   return (
     <AppProvider>
       <WizardProvider sessie={sessie}>
-        <AppShell onUitloggen={uitloggen} />
+        <AppShell sessie={sessie} onUitloggen={uitloggen} />
       </WizardProvider>
     </AppProvider>
   );

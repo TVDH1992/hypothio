@@ -1,16 +1,21 @@
-import { Calculator, Building2, User } from 'lucide-react';
+import { Calculator, Building2, User, Settings } from 'lucide-react';
 import { useApp, type Tab } from '../../context/AppContext';
 import { useWizard } from '../../context/WizardContext';
 
-const ITEMS: { tab: Tab; label: string; Icon: typeof Calculator }[] = [
-  { tab: 'berekenen', label: 'Berekenen', Icon: Calculator },
-  { tab: 'woningen',  label: 'Woningen',  Icon: Building2  },
-  { tab: 'profiel',   label: 'Profiel',   Icon: User       },
-];
+interface Props {
+  isAdmin?: boolean;
+}
 
-export function BottomNav() {
+export function BottomNav({ isAdmin }: Props) {
   const { tab, setTab } = useApp();
   const { setStap } = useWizard();
+
+  const ITEMS: { tab: Tab; label: string; Icon: typeof Calculator }[] = [
+    { tab: 'berekenen', label: 'Berekenen', Icon: Calculator },
+    { tab: 'woningen',  label: 'Woningen',  Icon: Building2  },
+    { tab: 'profiel',   label: 'Profiel',   Icon: User       },
+    ...(isAdmin ? [{ tab: 'admin' as Tab, label: 'Admin', Icon: Settings }] : []),
+  ];
 
   function navigeer(t: Tab) {
     setTab(t);
@@ -27,7 +32,7 @@ export function BottomNav() {
               key={t}
               type="button"
               onClick={() => navigeer(t)}
-              className="flex-1 flex flex-col items-center justify-center py-2.5 gap-1 transition cursor-pointer"
+              className="flex-1 flex flex-col items-center justify-center py-2.5 gap-1 transition cursor-pointer relative"
             >
               <Icon className={`w-5 h-5 transition-colors ${actief ? 'text-[#1ABC9C]' : 'text-gray-400'}`} />
               <span className={`text-[10px] font-medium transition-colors ${actief ? 'text-[#1ABC9C]' : 'text-gray-400'}`}>

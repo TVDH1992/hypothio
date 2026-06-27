@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 
-export type Tab = 'berekenen' | 'woningen' | 'profiel';
+export type Tab = 'berekenen' | 'woningen' | 'profiel' | 'admin';
 
 interface AppCtx {
   tab: Tab;

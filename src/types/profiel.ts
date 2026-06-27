@@ -21,4 +21,5 @@ export interface Sessie {
   naam: string;
   email: string;
   aangemaakt: string;
+  rol?: 'admin' | 'gebruiker';
 }
