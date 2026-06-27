@@ -29,15 +29,13 @@ export function Stap6Woning() {
         onChange={e => updateWoning({ koopsom: Number(e.target.value) })}
       />
 
-      {adv && (
-        <FormField
-          label="In te brengen eigen geld"
-          tooltip="Spaargeld, schenking of overwaarde vorige woning"
-          type="number" min={0} prefix="€" placeholder="0"
-          value={woning.eigenGeld ?? ''}
-          onChange={e => updateWoning({ eigenGeld: Number(e.target.value) })}
-        />
-      )}
+      <FormField
+        label={adv ? 'In te brengen eigen geld' : 'Spaargeld dat je inbrengt (optioneel)'}
+        tooltip="Spaargeld, schenking of overwaarde vorige woning"
+        type="number" min={0} prefix="€" placeholder="0"
+        value={woning.eigenGeld ?? ''}
+        onChange={e => updateWoning({ eigenGeld: Number(e.target.value) })}
+      />
 
       <div className="space-y-2">
         <p className="text-sm font-medium text-[#0D1F3C]">Rentevaste periode</p>
