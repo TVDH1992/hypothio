@@ -105,32 +105,6 @@ export function AdminScreen() {
             ))}
           </div>
 
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-            <p className="text-sm font-medium text-amber-800 mb-1">SQL: Admin instellen</p>
-            <p className="text-xs text-amber-700 mb-2">Voer dit uit in de Supabase SQL Editor om jezelf admin te maken:</p>
-            <code className="block bg-amber-100 rounded-lg p-3 text-xs text-amber-900 break-all leading-relaxed">
-              {`UPDATE auth.users SET raw_user_meta_data = raw_user_meta_data || '{"role":"admin"}'::jsonb WHERE email = 'jouw@email.nl';`}
-            </code>
-          </div>
-
-          <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
-            <p className="text-sm font-medium text-blue-800 mb-1">SQL: Rentestand tabel aanmaken</p>
-            <p className="text-xs text-blue-700 mb-2">Eenmalig uitvoeren in Supabase SQL Editor:</p>
-            <code className="block bg-blue-100 rounded-lg p-3 text-xs text-blue-900 whitespace-pre-wrap leading-relaxed">
-{`CREATE TABLE IF NOT EXISTS public.rentestand (
-  id SERIAL PRIMARY KEY,
-  periode INTEGER NOT NULL,
-  rente DECIMAL(5,4) NOT NULL,
-  bijgewerkt TIMESTAMPTZ DEFAULT now()
-);
-
-ALTER TABLE public.rentestand ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Lezen" ON public.rentestand FOR SELECT USING (true);
-
-INSERT INTO public.rentestand (periode, rente) VALUES
-(10, 0.0385),(15, 0.0400),(20, 0.0415),(30, 0.0440);`}
-            </code>
-          </div>
         </div>
       )}
 
