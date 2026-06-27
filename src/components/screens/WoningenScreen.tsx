@@ -336,7 +336,7 @@ export function WoningenScreen() {
             {fundaFout && <p className="text-xs text-red-500">{fundaFout}</p>}
             <div className="flex gap-2">
               <Button variant="ghost" size="sm" onClick={() => { setToonFundaForm(false); setFundaGevonden(null); setFundaUrl(''); setFundaPrijs(''); }}>Annuleer</Button>
-              <Button size="sm" onClick={voegFundaToe} disabled={!fundaUrl || !fundaPrijs || fundaLaden} className="flex-1">
+              <Button size="sm" onClick={voegFundaToe} disabled={!fundaUrl || fundaLaden} className="flex-1">
                 Opslaan
               </Button>
             </div>
