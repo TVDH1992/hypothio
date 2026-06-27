@@ -10,6 +10,7 @@ export function Stap3Inkomen1() {
   const { inkomen1, updateInkomen1, situatie, rol, volgende, vorige } = useWizard();
   const [toonExtra, setToonExtra] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
+  const [uploadInfo, setUploadInfo] = useState<{ werkgever?: string; periode?: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const isValid = (inkomen1.brutoSalaris ?? 0) > 0;
   const adv = rol === 'adviseur';
@@ -35,7 +36,17 @@ export function Stap3Inkomen1() {
 
       if (!res.ok) throw new Error('Lezen mislukt');
       const data = await res.json();
-      updateInkomen1({ brutoSalaris: data.brutoMaandSalaris });
+      updateInkomen1({
+        brutoSalaris:        data.brutoMaandSalaris || undefined,
+        frequentie:          data.frequentie ?? 'maand',
+        heeftVakantiegeld:   data.heeftVakantiegeld ?? true,
+        heeftDertiendeMaand: data.heeftDertiendeMaand ?? false,
+        ortPerMaand:         data.ortPerMaand || undefined,
+        vasterJaarbonus:     data.vasterJaarbonus || undefined,
+      });
+      if (data.werkgever || data.periode) {
+        setUploadInfo({ werkgever: data.werkgever, periode: data.periode });
+      }
       setUploadStatus('succes');
     } catch {
       setUploadStatus('fout');
@@ -77,11 +88,15 @@ export function Stap3Inkomen1() {
             <div className="text-left">
               <p className={`text-sm font-medium ${uploadStatus === 'succes' ? 'text-emerald-700' : 'text-[#0D1F3C]'}`}>
                 {uploadStatus === 'laden' && 'Loonstrook lezen...'}
-                {uploadStatus === 'succes' && 'Salaris ingevuld!'}
+                {uploadStatus === 'succes' && 'Gegevens ingevuld!'}
                 {uploadStatus === 'fout'   && 'Kon het niet lezen — probeer opnieuw'}
                 {uploadStatus === 'idle'   && 'Loonstrook uploaden (optioneel)'}
               </p>
-              <p className="text-xs text-gray-400">PDF of foto — we lezen het bedrag automatisch uit</p>
+              <p className="text-xs text-gray-400">
+                {uploadStatus === 'succes' && uploadInfo
+                  ? [uploadInfo.werkgever, uploadInfo.periode].filter(Boolean).join(' · ')
+                  : 'PDF of foto — we lezen je salaris automatisch uit'}
+              </p>
             </div>
           </button>
         </div>
