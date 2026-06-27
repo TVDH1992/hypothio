@@ -8,17 +8,19 @@ export default async function handler(req, res) {
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-  const prompt = `Je bent een Nederlandse woningmarktexpert. Analyseer deze woning voor een koper:
+  const prompt = `Je bent een Nederlandse woningmarktexpert. Analyseer deze woning voor een koper.
 
 Adres: ${adres}, ${stad}
 Type: ${type ?? 'woning'}
-WOZ-waarde: €${wozWaarde ? wozWaarde.toLocaleString('nl-NL') : 'onbekend'}${peildatum ? ` (peildatum ${peildatum})` : ''}
+${wozWaarde ? `WOZ-waarde: €${wozWaarde.toLocaleString('nl-NL')}${peildatum ? ` (peildatum ${peildatum})` : ''}` : 'WOZ-waarde: niet beschikbaar — gebruik jouw kennis van de lokale markt'}
 
-Geef een praktische analyse in dit exacte JSON formaat (geen extra tekst):
+BELANGRIJK: Geef ALTIJD een concrete schatting van de marktwaarde op basis van locatie, type en jouw kennis van de Nederlandse huizenmarkt. Nooit null of 0 voor marktwaarde — maak een realistische inschatting.
+
+Geef een praktische analyse in dit exacte JSON formaat (geen extra tekst, geen uitleg buiten de JSON):
 {
-  "marktwaarde": <getal in euros, schatting op basis van WOZ × marktcorrectie>,
+  "marktwaarde": <getal in euros, altijd een positief getal — schat op basis van locatie en type>,
   "biedadvies": "<concreet advies, bijv. 'Bod van €X tot €Y is reëel'>",
-  "vraagprijsOordeel": "<'Scherp geprijsd', 'Marktconform' of 'Aan de hoge kant'>",
+  "vraagprijsOordeel": "<één van: 'Scherp geprijsd', 'Marktconform' of 'Aan de hoge kant'>",
   "aandachtspunten": [
     "<specifiek punt 1>",
     "<specifiek punt 2>",

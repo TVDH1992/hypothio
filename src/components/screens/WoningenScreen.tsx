@@ -169,8 +169,10 @@ export function WoningenScreen() {
       });
       if (analyseRes.ok) {
         const analyse = await analyseRes.json();
+        // Zorg dat marktwaarde altijd een getal is
+        if (analyse.marktwaarde) analyse.marktwaarde = Number(analyse.marktwaarde) || 0;
         setFundaAnalyse(analyse);
-        if (analyse.marktwaarde && !fundaPrijs) setFundaPrijs(String(analyse.marktwaarde));
+        if (analyse.marktwaarde > 0 && !fundaPrijs) setFundaPrijs(String(analyse.marktwaarde));
       } else {
         const err = await analyseRes.json().catch(() => ({}));
         setFundaAnalyseFout(err.error ?? `Analyse mislukt (${analyseRes.status})`);
@@ -397,13 +399,17 @@ export function WoningenScreen() {
 
                 <div className="bg-white rounded-lg p-3 space-y-1">
                   <p className="text-xs text-gray-400">Geschatte marktwaarde</p>
-                  <p className="text-lg font-bold text-[#0D1F3C]">{euro(fundaAnalyse.marktwaarde)}</p>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium inline-block
-                    ${fundaAnalyse.vraagprijsOordeel === 'Scherp geprijsd' ? 'bg-emerald-100 text-emerald-700'
-                    : fundaAnalyse.vraagprijsOordeel === 'Marktconform' ? 'bg-blue-100 text-blue-700'
-                    : 'bg-amber-100 text-amber-700'}`}>
-                    {fundaAnalyse.vraagprijsOordeel}
-                  </span>
+                  <p className="text-lg font-bold text-[#0D1F3C]">
+                    {fundaAnalyse.marktwaarde > 0 ? euro(fundaAnalyse.marktwaarde) : 'Onbekend'}
+                  </p>
+                  {fundaAnalyse.vraagprijsOordeel && fundaAnalyse.vraagprijsOordeel !== 'Onbepaald' && (
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium inline-block
+                      ${fundaAnalyse.vraagprijsOordeel === 'Scherp geprijsd' ? 'bg-emerald-100 text-emerald-700'
+                      : fundaAnalyse.vraagprijsOordeel === 'Marktconform' ? 'bg-blue-100 text-blue-700'
+                      : 'bg-amber-100 text-amber-700'}`}>
+                      {fundaAnalyse.vraagprijsOordeel}
+                    </span>
+                  )}
                 </div>
 
                 <div className="bg-white rounded-lg p-3">
