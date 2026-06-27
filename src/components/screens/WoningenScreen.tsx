@@ -123,24 +123,26 @@ export function WoningenScreen() {
     const parsed = parseFundaUrl(url);
     if (!parsed.geldig || !url.includes('funda.nl')) return;
     setFundaLaden(true);
+
+    const type = url.includes('/appartement') ? 'appartement' : 'huis';
+    let wozWaarde: number | undefined;
+    let peildatum: string | undefined;
+
+    // WOZ lookup — mag falen
     try {
-      const type = url.includes('/appartement') ? 'appartement' : 'huis';
-      const zoekQuery = `${parsed.adres} ${parsed.stad}`;
-      const suggesties = await zoekAdres(zoekQuery);
-
-      let wozWaarde: number | undefined;
-      let peildatum: string | undefined;
-
+      const suggesties = await zoekAdres(`${parsed.adres} ${parsed.stad}`);
       if (suggesties.length > 0) {
         const woz = await haalWozWaarde(suggesties[0].nummeraanduidingId);
         wozWaarde = woz.wozWaarde;
         peildatum = woz.peildatum;
         setFundaPrijs(String(schatMarktwaarde(woz.wozWaarde)));
       }
+    } catch { /* WOZ niet beschikbaar */ }
 
-      setFundaGevonden({ adres: parsed.adres, stad: parsed.stad, type });
+    setFundaGevonden({ adres: parsed.adres, stad: parsed.stad, type });
 
-      // Claude analyse
+    // Claude analyse — apart zodat WOZ falen het niet blokkeert
+    try {
       const analyseRes = await fetch('/api/woninganalyse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -151,11 +153,9 @@ export function WoningenScreen() {
         setFundaAnalyse(analyse);
         if (analyse.marktwaarde && !wozWaarde) setFundaPrijs(String(analyse.marktwaarde));
       }
-    } catch {
-      setFundaGevonden({ adres: parsed.adres, stad: parsed.stad });
-    } finally {
-      setFundaLaden(false);
-    }
+    } catch { /* Claude niet beschikbaar */ }
+
+    setFundaLaden(false);
   }
 
   function voegFundaToe() {
