@@ -13,7 +13,16 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
   const { url } = req.body ?? {};
 
-  const html = await fetch(url, { headers: HEADERS }).then(r => r.text()).catch(e => `ERROR: ${e.message}`);
+  const scraperKey = process.env.SCRAPER_API_KEY;
+  let html;
+  if (scraperKey) {
+    html = await fetch(
+      `http://api.scraperapi.com?api_key=${scraperKey}&url=${encodeURIComponent(url)}&country_code=nl`,
+      { headers: { Accept: 'text/html' } }
+    ).then(r => r.text()).catch(e => `SCRAPER ERROR: ${e.message}`);
+  } else {
+    html = await fetch(url, { headers: HEADERS }).then(r => r.text()).catch(e => `DIRECT ERROR: ${e.message}`);
+  }
 
   // __NEXT_DATA__ eerste 8000 tekens (bevat alle property data)
   const nextMatch = html.match ? html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/) : null;
@@ -24,6 +33,7 @@ export default async function handler(req, res) {
   const ldData = ldScripts.map(m => { try { return JSON.parse(m[1]); } catch { return m[1].substring(0, 500); } });
 
   return res.status(200).json({
+    usedScraper: !!scraperKey,
     htmlLength: html.length,
     hasNextData: !!nextMatch,
     ldScriptCount: ldScripts.length,
