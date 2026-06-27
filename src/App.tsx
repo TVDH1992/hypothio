@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { WizardProvider, useWizard } from './context/WizardContext';
 import { AppProvider, useApp } from './context/AppContext';
+import { supabase } from './lib/supabase';
 import { ProgressBar } from './components/ui/ProgressBar';
 import { BottomNav } from './components/nav/BottomNav';
 import { Stap1Welkom } from './components/wizard/Stap1Welkom';
@@ -15,7 +16,7 @@ import { WoningenScreen } from './components/screens/WoningenScreen';
 import { ProfielScreen } from './components/screens/ProfielScreen';
 import { HomeScreen } from './components/screens/HomeScreen';
 import { LoginScreen } from './components/LoginScreen';
-import { laadSessie, verwijderSessie } from './lib/profiel';
+import { verwijderSessie } from './lib/profiel';
 import type { Sessie } from './types/profiel';
 
 const STAP_LABELS: Record<number, string> = {
@@ -80,11 +81,55 @@ function AppShell({ onUitloggen }: { onUitloggen: () => void }) {
 }
 
 export default function App() {
-  const [sessie, setSessie] = useState<Sessie | null>(laadSessie);
+  const [sessie, setSessie] = useState<Sessie | null>(null);
+  const [laden, setLaden]   = useState(true);
 
-  function uitloggen() {
+  useEffect(() => {
+    // Herstel sessie bij refresh
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setSessie({
+          naam: session.user.user_metadata?.naam ?? session.user.email!.split('@')[0],
+          email: session.user.email!,
+          aangemaakt: new Date(session.user.created_at).toLocaleDateString('nl-NL'),
+        });
+      }
+      setLaden(false);
+    });
+
+    // Luister naar login/logout events
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setSessie({
+          naam: session.user.user_metadata?.naam ?? session.user.email!.split('@')[0],
+          email: session.user.email!,
+          aangemaakt: new Date(session.user.created_at).toLocaleDateString('nl-NL'),
+        });
+      } else {
+        setSessie(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  async function uitloggen() {
+    await supabase.auth.signOut();
     verwijderSessie();
     setSessie(null);
+  }
+
+  if (laden) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center" style={{ fontFamily: "'Inter', sans-serif" }}>
+        <div className="text-center space-y-3">
+          <div className="w-10 h-10 bg-[#1ABC9C] rounded-xl flex items-center justify-center mx-auto">
+            <span className="text-white font-bold">H</span>
+          </div>
+          <p className="text-sm text-gray-400">Laden...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!sessie) {
