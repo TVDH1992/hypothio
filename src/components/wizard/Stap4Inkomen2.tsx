@@ -1,13 +1,41 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { Upload, CheckCircle, Loader2 } from 'lucide-react';
 import { useWizard } from '../../context/WizardContext';
 import { Button } from '../ui/Button';
 import { FormField, Toggle } from '../ui/FormField';
 
+type UploadStatus = 'idle' | 'laden' | 'succes' | 'fout';
+
 export function Stap4Inkomen2() {
   const { inkomen2, updateInkomen2, rol, volgende, vorige } = useWizard();
   const [toonExtra, setToonExtra] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
+  const fileRef = useRef<HTMLInputElement>(null);
   const isValid = (inkomen2.brutoSalaris ?? 0) > 0;
   const adv = rol === 'adviseur';
+
+  async function verwerkBestand(file: File) {
+    setUploadStatus('laden');
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve((reader.result as string).split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const res = await fetch('/api/loonstrook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base64, mediaType: file.type }),
+      });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      updateInkomen2({ brutoSalaris: data.brutoMaandSalaris });
+      setUploadStatus('succes');
+    } catch {
+      setUploadStatus('fout');
+    }
+  }
 
   return (
     <div className="space-y-5">
@@ -19,6 +47,38 @@ export function Stap4Inkomen2() {
           {adv ? 'Gebruik altijd bruto bedragen.' : 'Vul de bruto bedragen van je partner in.'}
         </p>
       </div>
+
+      {!adv && (
+        <div>
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".pdf,image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={e => { const f = e.target.files?.[0]; if (f) verwerkBestand(f); }}
+          />
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={uploadStatus === 'laden'}
+            className={`w-full flex items-center justify-center gap-3 p-4 rounded-xl border-2 border-dashed transition cursor-pointer
+              ${uploadStatus === 'succes' ? 'border-emerald-400 bg-emerald-50' : 'border-gray-200 hover:border-[#1ABC9C] hover:bg-[#1ABC9C]/5'}`}
+          >
+            {uploadStatus === 'laden' && <Loader2 className="w-5 h-5 text-[#1ABC9C] animate-spin" />}
+            {uploadStatus === 'succes' && <CheckCircle className="w-5 h-5 text-emerald-500" />}
+            {(uploadStatus === 'idle' || uploadStatus === 'fout') && <Upload className="w-5 h-5 text-[#1ABC9C]" />}
+            <div className="text-left">
+              <p className={`text-sm font-medium ${uploadStatus === 'succes' ? 'text-emerald-700' : 'text-[#0D1F3C]'}`}>
+                {uploadStatus === 'laden' && 'Loonstrook lezen...'}
+                {uploadStatus === 'succes' && 'Salaris partner ingevuld!'}
+                {uploadStatus === 'fout'   && 'Niet gelukt — probeer opnieuw'}
+                {uploadStatus === 'idle'   && 'Loonstrook partner uploaden (optioneel)'}
+              </p>
+              <p className="text-xs text-gray-400">PDF of foto — we lezen het bedrag automatisch uit</p>
+            </div>
+          </button>
+        </div>
+      )}
 
       <div className="space-y-2">
         <p className="text-sm font-medium text-[#0D1F3C]">{adv ? 'Uitbetalingsfrequentie' : 'Hoe ontvangt je partner het salaris?'}</p>
