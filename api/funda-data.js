@@ -33,7 +33,6 @@ async function zoekEchteUrl(invoerUrl) {
   const slug = parts[koopIdx + 2] ?? '';
   const zoekwoorden = slug.split('-').filter(d => d && !/^\d{4}[a-z]{2}$/i.test(d)).slice(1, 4).join(' ');
   if (!stad || !zoekwoorden) return null;
-
   try {
     const res = await fetch(`https://www.funda.nl/koop/${stad}/`, { headers: HEADERS });
     if (!res.ok) return null;
@@ -44,12 +43,6 @@ async function zoekEchteUrl(invoerUrl) {
         return `https://www.funda.nl${m[1]}`;
       }
     }
-    const adresIdx = html.toLowerCase().indexOf(zoekwoorden.toLowerCase().split(' ')[0]);
-    if (adresIdx > -1) {
-      const rondom = html.substring(Math.max(0, adresIdx - 800), adresIdx + 200);
-      const m = rondom.match(/href="(\/detail\/koop\/[^"]+\/\d+\/)"/);
-      if (m) return `https://www.funda.nl${m[1]}`;
-    }
   } catch { }
   return null;
 }
@@ -57,56 +50,121 @@ async function zoekEchteUrl(invoerUrl) {
 function parseHtml(html) {
   const data = {};
 
-  // --- JSON-LD: Funda publiceert gestructureerde data voor zoekmachines ---
-  // Dit is de meest betrouwbare bron: officieel door Funda gepubliceerd
-  const ldMatch = html.match(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/i);
-  if (ldMatch) {
+  // 1. Alle JSON-LD scripts doorzoeken (Funda heeft er meerdere op de pagina)
+  const ldScripts = [...html.matchAll(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi)];
+  for (const match of ldScripts) {
     try {
-      const ld = JSON.parse(ldMatch[1]);
-      if (ld.offers?.price && Number(ld.offers.price) > 10000) {
+      const ld = JSON.parse(match[1]);
+      if (!data.prijs && ld.offers?.price && Number(ld.offers.price) > 10000) {
         data.prijs = Number(ld.offers.price);
       }
       if (ld.address?.streetAddress) data.straat = ld.address.streetAddress;
       if (ld.address?.addressLocality) data.stadLd = ld.address.addressLocality;
+      // Prijs kan ook als string met punten: "425.000"
+      if (!data.prijs && ld.offers?.price) {
+        const p = Number(String(ld.offers.price).replace(/\./g, ''));
+        if (p > 10000) data.prijs = p;
+      }
     } catch { }
   }
 
-  // --- HTML patronen als JSON-LD geen prijs heeft ---
+  // 2. __NEXT_DATA__ — Funda is een Next.js app, alle paginadata zit hier in
+  const nextMatch = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+  if (nextMatch) {
+    try {
+      // Werken met de JSON-string is sneller dan recursief object doorzoeken
+      const str = JSON.stringify(JSON.parse(nextMatch[1]));
+
+      if (!data.prijs) {
+        const pp = [
+          /"koopprijs"\s*:\s*(\d{5,7})/,
+          /"vraagprijs"\s*:\s*(\d{5,7})/,
+          /"price"\s*:\s*(\d{5,7})/,
+          /"koopsomEuros"\s*:\s*(\d{5,7})/,
+        ];
+        for (const p of pp) {
+          const m = str.match(p);
+          if (m) { const v = Number(m[1]); if (v > 50000 && v < 5_000_000) { data.prijs = v; break; } }
+        }
+      }
+
+      if (!data.bouwjaar) {
+        const m = str.match(/"bouwjaar"\s*:\s*(\d{4})/);
+        if (m) { const y = Number(m[1]); if (y > 1800 && y <= new Date().getFullYear() + 5) data.bouwjaar = y; }
+      }
+
+      if (!data.oppervlakte) {
+        const m = str.match(/"woonoppervlakte"\s*:\s*(\d{2,4})/)
+          ?? str.match(/"gebruiksoppervlakteWonen"\s*:\s*(\d{2,4})/)
+          ?? str.match(/"oppervlakte"\s*:\s*(\d{2,4})/);
+        if (m) { const v = Number(m[1]); if (v > 10 && v < 2000) data.oppervlakte = v; }
+      }
+
+      if (!data.energielabel) {
+        const m = str.match(/"energieklasse"\s*:\s*"([A-G][+]{0,4})"/i)
+          ?? str.match(/"energielabel"\s*:\s*"([A-G][+]{0,4})"/i)
+          ?? str.match(/"energieklasseLabel"\s*:\s*"([A-G][+]{0,4})"/i);
+        if (m) data.energielabel = m[1].toUpperCase();
+      }
+
+      if (!data.slaapkamers) {
+        const m = str.match(/"aantalSlaapkamers"\s*:\s*(\d+)/)
+          ?? str.match(/"aantalslaapkamers"\s*:\s*(\d+)/)
+          ?? str.match(/"slaapkamers"\s*:\s*(\d+)/);
+        if (m) { const v = Number(m[1]); if (v > 0 && v < 20) data.slaapkamers = v; }
+      }
+
+      if (!data.kamers) {
+        const m = str.match(/"aantalKamers"\s*:\s*(\d+)/)
+          ?? str.match(/"aantalkamers"\s*:\s*(\d+)/);
+        if (m) { const v = Number(m[1]); if (v > 0 && v < 20) data.kamers = v; }
+      }
+
+    } catch { }
+  }
+
+  // 3. HTML regex fallback voor prijs
   if (!data.prijs) {
     const patronen = [
-      /€\s*([0-9]{2,4}\.[0-9]{3})\s*(?:k\.k|v\.o\.n)/i,
-      /([0-9]{2,4}\.[0-9]{3})\s*(?:k\.k|v\.o\.n)/i,
-      /"price"\s*:\s*([0-9]{5,7})/i,
-      /"koopprijs"\s*:\s*([0-9]{5,7})/i,
+      /€\s*([\d]{2,4}\.[\d]{3})\s*(?:k\.k\.|v\.o\.n\.)/i,
+      /€\s*([\d]{2,4}\.[\d]{3})/,
+      /"price"\s*:\s*"?([\d]{5,7})"?/i,
     ];
     for (const p of patronen) {
       const m = html.match(p);
       if (m) {
-        const prijs = Number(m[1].replace(/\./g, ''));
-        if (prijs > 50000 && prijs < 5000000) { data.prijs = prijs; break; }
+        const v = Number(m[1].replace(/\./g, ''));
+        if (v > 50000 && v < 5_000_000) { data.prijs = v; break; }
       }
     }
   }
 
-  // Bouwjaar
-  const byMatch = html.match(/[Bb]ouwjaar[\s\S]{0,80}?(\d{4})/);
-  if (byMatch) { const y = Number(byMatch[1]); if (y > 1800 && y <= new Date().getFullYear() + 5) data.bouwjaar = y; }
+  // 4. HTML regex fallback voor overige velden
+  if (!data.bouwjaar) {
+    const m = html.match(/[Bb]ouwjaar[\s\S]{0,80}?(\d{4})/);
+    if (m) { const y = Number(m[1]); if (y > 1800 && y <= new Date().getFullYear() + 5) data.bouwjaar = y; }
+  }
 
-  // Oppervlakte
-  const m2Match = html.match(/(\d{2,4})\s*m²/) ?? html.match(/woonoppervlak[\s\S]{0,30}?(\d{2,4})/i);
-  if (m2Match) { const m = Number(m2Match[1]); if (m > 10 && m < 1000) data.oppervlakte = m; }
+  if (!data.oppervlakte) {
+    const m = html.match(/(\d{2,4})\s*m²\s*wonen/i) ?? html.match(/(\d{2,4})\s*m²/);
+    if (m) { const v = Number(m[1]); if (v > 10 && v < 2000) data.oppervlakte = v; }
+  }
 
-  // Energielabel
-  const labelMatch = html.match(/[Ee]nergielabel[\s\S]{0,50}?([A-G][+]{0,4})/) ?? html.match(/[Ee]nergieklasse[\s\S]{0,50}?([A-G][+]{0,4})/);
-  if (labelMatch) data.energielabel = labelMatch[1].toUpperCase();
+  if (!data.energielabel) {
+    const m = html.match(/[Ee]nergielabel[\s\S]{0,50}?([A-G][+]{0,4})/)
+      ?? html.match(/[Ee]nergieklasse[\s\S]{0,50}?([A-G][+]{0,4})/);
+    if (m) data.energielabel = m[1].toUpperCase();
+  }
 
-  // Slaapkamers
-  const slaapMatch = html.match(/(\d+)\s*[Ss]laapkamers?/);
-  if (slaapMatch) { const k = Number(slaapMatch[1]); if (k > 0 && k < 20) data.slaapkamers = k; }
+  if (!data.slaapkamers) {
+    const m = html.match(/(\d+)\s*slaapkamers?/i);
+    if (m) { const v = Number(m[1]); if (v > 0 && v < 20) data.slaapkamers = v; }
+  }
 
-  // Kamers
-  const kamersMatch = html.match(/(\d+)\s*kamers?(?!\s*slaap)/i);
-  if (kamersMatch) { const k = Number(kamersMatch[1]); if (k > 0 && k < 20) data.kamers = k; }
+  if (!data.kamers) {
+    const m = html.match(/(\d+)\s*kamers?(?!\s*slaap)/i);
+    if (m) { const v = Number(m[1]); if (v > 0 && v < 20) data.kamers = v; }
+  }
 
   data.isNieuwbouw = /nieuwbouw|v\.o\.n\.|vrij\s+op\s+naam/i.test(html);
   data.prijstype = /v\.o\.n\./i.test(html) ? 'von' : 'kk';
