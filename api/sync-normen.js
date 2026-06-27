@@ -1,10 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY,
-);
-
 // AFM publiceert de wettelijke minimale toetsrente op hun website
 async function haalAfmToetsrente() {
   const res = await fetch(
@@ -38,11 +33,17 @@ async function haalAfmToetsrente() {
 }
 
 export default async function handler(req, res) {
-  // Beveilig endpoint — alleen aanroepen met secret
   const secret = req.headers['x-sync-secret'];
   if (secret !== process.env.SYNC_SECRET) {
     return res.status(401).json({ error: 'Niet geautoriseerd' });
   }
+
+  const supabaseUrl = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
+  if (!supabaseUrl || !supabaseKey) {
+    return res.status(500).json({ error: 'Supabase env vars ontbreken', supabaseUrl: !!supabaseUrl, supabaseKey: !!supabaseKey });
+  }
+  const supabase = createClient(supabaseUrl, supabaseKey);
 
   const resultaat = { afm: null, fout: null };
 
