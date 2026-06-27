@@ -1,5 +1,3 @@
-import Anthropic from '@anthropic-ai/sdk';
-
 const HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
   'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -7,7 +5,6 @@ const HEADERS = {
   'Referer': 'https://www.funda.nl/',
   'sec-ch-ua': '"Chromium";v="124", "Google Chrome";v="124"',
   'sec-ch-ua-mobile': '?0',
-  'sec-ch-ua-platform': '"Windows"',
   'Sec-Fetch-Dest': 'document',
   'Sec-Fetch-Mode': 'navigate',
   'Sec-Fetch-Site': 'same-origin',
@@ -41,7 +38,6 @@ async function zoekEchteUrl(invoerUrl) {
     const res = await fetch(`https://www.funda.nl/koop/${stad}/`, { headers: HEADERS });
     if (!res.ok) return null;
     const html = await res.text();
-
     const urlMatches = [...html.matchAll(/href="(\/detail\/koop\/[^"]+\/\d+\/)"/g)];
     for (const m of urlMatches) {
       if (zoekwoorden.split(' ').some(w => m[1].toLowerCase().includes(w.toLowerCase()))) {
@@ -58,51 +54,63 @@ async function zoekEchteUrl(invoerUrl) {
   return null;
 }
 
-// Claude leest de HTML en haalt alle woningdata eruit
-async function parseMetClaude(html) {
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+function parseHtml(html) {
+  const data = {};
 
-  // Stuur alleen relevante stukken HTML mee (max ~15k chars om tokens te besparen)
-  const relevantHtml = html
-    .replace(/<script[\s\S]*?<\/script>/gi, '')   // scripts eruit
-    .replace(/<style[\s\S]*?<\/style>/gi, '')      // styles eruit
-    .replace(/<!--[\s\S]*?-->/g, '')               // comments eruit
-    .replace(/\s{2,}/g, ' ')                       // dubbele spaties samenvoegen
-    .substring(0, 15000);
+  // --- JSON-LD: Funda publiceert gestructureerde data voor zoekmachines ---
+  // Dit is de meest betrouwbare bron: officieel door Funda gepubliceerd
+  const ldMatch = html.match(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/i);
+  if (ldMatch) {
+    try {
+      const ld = JSON.parse(ldMatch[1]);
+      if (ld.offers?.price && Number(ld.offers.price) > 10000) {
+        data.prijs = Number(ld.offers.price);
+      }
+      if (ld.address?.streetAddress) data.straat = ld.address.streetAddress;
+      if (ld.address?.addressLocality) data.stadLd = ld.address.addressLocality;
+    } catch { }
+  }
 
-  const prompt = `Dit is HTML van een Funda woningpagina. Extraheer de volgende gegevens en geef ze terug als JSON (alleen JSON, geen uitleg):
+  // --- HTML patronen als JSON-LD geen prijs heeft ---
+  if (!data.prijs) {
+    const patronen = [
+      /€\s*([0-9]{2,4}\.[0-9]{3})\s*(?:k\.k|v\.o\.n)/i,
+      /([0-9]{2,4}\.[0-9]{3})\s*(?:k\.k|v\.o\.n)/i,
+      /"price"\s*:\s*([0-9]{5,7})/i,
+      /"koopprijs"\s*:\s*([0-9]{5,7})/i,
+    ];
+    for (const p of patronen) {
+      const m = html.match(p);
+      if (m) {
+        const prijs = Number(m[1].replace(/\./g, ''));
+        if (prijs > 50000 && prijs < 5000000) { data.prijs = prijs; break; }
+      }
+    }
+  }
 
-${relevantHtml}
+  // Bouwjaar
+  const byMatch = html.match(/[Bb]ouwjaar[\s\S]{0,80}?(\d{4})/);
+  if (byMatch) { const y = Number(byMatch[1]); if (y > 1800 && y <= new Date().getFullYear() + 5) data.bouwjaar = y; }
 
-Geef exact dit JSON formaat terug:
-{
-  "prijs": <vraagprijs als getal zonder punten, bijv. 425000, of null als niet gevonden>,
-  "prijstype": "<'kk' voor kosten koper of 'von' voor vrij op naam>",
-  "bouwjaar": <bouwjaar als getal, bijv. 1998, of null>,
-  "oppervlakte": <woonoppervlakte in m² als getal, of null>,
-  "slaapkamers": <aantal slaapkamers als getal, of null>,
-  "kamers": <totaal aantal kamers als getal, of null>,
-  "energielabel": "<letter zoals A, B, C of A+ etc., of null>",
-  "isNieuwbouw": <true of false>
-}`;
+  // Oppervlakte
+  const m2Match = html.match(/(\d{2,4})\s*m²/) ?? html.match(/woonoppervlak[\s\S]{0,30}?(\d{2,4})/i);
+  if (m2Match) { const m = Number(m2Match[1]); if (m > 10 && m < 1000) data.oppervlakte = m; }
 
-  const message = await client.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 200,
-    messages: [{ role: 'user', content: prompt }],
-  });
+  // Energielabel
+  const labelMatch = html.match(/[Ee]nergielabel[\s\S]{0,50}?([A-G][+]{0,4})/) ?? html.match(/[Ee]nergieklasse[\s\S]{0,50}?([A-G][+]{0,4})/);
+  if (labelMatch) data.energielabel = labelMatch[1].toUpperCase();
 
-  const tekst = message.content[0]?.text ?? '';
-  const jsonMatch = tekst.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) return null;
+  // Slaapkamers
+  const slaapMatch = html.match(/(\d+)\s*[Ss]laapkamers?/);
+  if (slaapMatch) { const k = Number(slaapMatch[1]); if (k > 0 && k < 20) data.slaapkamers = k; }
 
-  const data = JSON.parse(jsonMatch[0]);
-  // Zorg dat getallen echte getallen zijn
-  if (data.prijs) data.prijs = Number(data.prijs) || null;
-  if (data.bouwjaar) data.bouwjaar = Number(data.bouwjaar) || null;
-  if (data.oppervlakte) data.oppervlakte = Number(data.oppervlakte) || null;
-  if (data.slaapkamers) data.slaapkamers = Number(data.slaapkamers) || null;
-  if (data.kamers) data.kamers = Number(data.kamers) || null;
+  // Kamers
+  const kamersMatch = html.match(/(\d+)\s*kamers?(?!\s*slaap)/i);
+  if (kamersMatch) { const k = Number(kamersMatch[1]); if (k > 0 && k < 20) data.kamers = k; }
+
+  data.isNieuwbouw = /nieuwbouw|v\.o\.n\.|vrij\s+op\s+naam/i.test(html);
+  data.prijstype = /v\.o\.n\./i.test(html) ? 'von' : 'kk';
+
   return data;
 }
 
@@ -112,8 +120,8 @@ export default async function handler(req, res) {
   if (!url || !url.includes('funda.nl')) return res.status(400).json({ error: 'Ongeldige URL' });
 
   let teGebruikenUrl = url.trim();
-
   let html;
+
   try {
     html = await haalHtml(teGebruikenUrl);
   } catch (e) {
@@ -121,9 +129,8 @@ export default async function handler(req, res) {
       const echteUrl = await zoekEchteUrl(teGebruikenUrl);
       if (echteUrl) {
         teGebruikenUrl = echteUrl;
-        try { html = await haalHtml(echteUrl); } catch (e2) {
-          return res.status(500).json({ error: e2.message });
-        }
+        try { html = await haalHtml(echteUrl); }
+        catch (e2) { return res.status(500).json({ error: e2.message }); }
       } else {
         return res.status(404).json({ error: 'Woning niet gevonden op Funda' });
       }
@@ -132,17 +139,11 @@ export default async function handler(req, res) {
     }
   }
 
-  const geblokkeerd = html.length < 8000 && /cf-browser-verification|challenge-platform|turnstile/i.test(html);
-  if (geblokkeerd) {
+  if (html.length < 8000 && /cf-browser-verification|challenge-platform|turnstile/i.test(html)) {
     return res.status(422).json({ error: 'Toegang geblokkeerd', geblokkeerd: true });
   }
 
-  try {
-    const data = await parseMetClaude(html);
-    if (!data) return res.status(422).json({ error: 'Kon data niet lezen uit pagina' });
-    data._url = teGebruikenUrl;
-    return res.status(200).json(data);
-  } catch (e) {
-    return res.status(500).json({ error: `Claude parse fout: ${e.message}` });
-  }
+  const data = parseHtml(html);
+  data._url = teGebruikenUrl;
+  return res.status(200).json(data);
 }
