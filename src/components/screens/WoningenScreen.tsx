@@ -167,9 +167,10 @@ export function WoningenScreen() {
       const woz = await haalWozOpAdres(`${parsed.adres} ${parsed.stad}`);
       wozWaarde = woz.wozWaarde;
       peildatum = woz.peildatum;
-      // BAG data als funda-data die niet heeft
+      // BAG + EP-online data als funda-data die niet heeft
       if (!details?.bouwjaar && woz.bouwjaar) details = { ...details, bouwjaar: woz.bouwjaar };
       if (!details?.oppervlakte && woz.oppervlakte) details = { ...details, oppervlakte: woz.oppervlakte };
+      if (!details?.energielabel && woz.energielabel) details = { ...details, energielabel: woz.energielabel };
       if (details !== null) setFundaDetails({ ...details });
     } catch { /* WOZ niet beschikbaar */ }
 

@@ -1,6 +1,7 @@
-const PDOK_URL = 'https://api.pdok.nl/bzk/locatieserver/search/v3_1/free';
-const WOZ_URL  = 'https://api.wozwaardeloket.nl/woz-waarden';
-const BAG_WFS  = 'https://service.pdok.nl/lv/bag/wfs/v2_0';
+const PDOK_URL    = 'https://api.pdok.nl/bzk/locatieserver/search/v3_1/free';
+const WOZ_URL     = 'https://api.wozwaardeloket.nl/woz-waarden';
+const BAG_WFS     = 'https://service.pdok.nl/lv/bag/wfs/v2_0';
+const EP_ONLINE   = 'https://public.ep-online.nl/api/v4/PandEnergielabel/AdresseerbaarObject';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
@@ -28,10 +29,11 @@ export default async function handler(req, res) {
 }
 
 async function ophalen(nummeraanduidingId, pdokDoc, res) {
-  // WOZ en BAG parallel ophalen
-  const [wozResultaat, bagResultaat] = await Promise.allSettled([
+  // WOZ, BAG en EP-online parallel ophalen
+  const [wozResultaat, bagResultaat, epResultaat] = await Promise.allSettled([
     haalWoz(nummeraanduidingId),
     pdokDoc ? haalBag(pdokDoc) : Promise.resolve(null),
+    pdokDoc?.adresseerbaarobject_id ? haalEnergieLabelEP(pdokDoc.adresseerbaarobject_id) : Promise.resolve(null),
   ]);
 
   if (wozResultaat.status === 'rejected') {
@@ -40,15 +42,17 @@ async function ophalen(nummeraanduidingId, pdokDoc, res) {
 
   const woz = wozResultaat.value;
   const bag = bagResultaat.status === 'fulfilled' ? bagResultaat.value : null;
+  const ep  = epResultaat.status === 'fulfilled' ? epResultaat.value : null;
 
   return res.status(200).json({
     wozWaarde: woz.wozWaarde,
     peildatum: woz.peildatum,
     nummeraanduidingId,
-    // BAG data — gratis via PDOK BBOX query
     bouwjaar: bag?.bouwjaar ?? null,
     oppervlakte: bag?.oppervlakte ?? null,
     pandstatus: bag?.pandstatus ?? null,
+    energielabel: ep?.energieklasse ?? null,
+    energielabelPeildatum: ep?.berekeningType ?? null,
   });
 }
 
@@ -61,6 +65,19 @@ async function haalWoz(nummeraanduidingId) {
   if (!Array.isArray(data) || data.length === 0) throw new Error('Geen WOZ gegevens');
   const latest = data.sort((a, b) => b.peildatum.localeCompare(a.peildatum))[0];
   return { wozWaarde: latest.vastgesteldeWaarde, peildatum: latest.peildatum };
+}
+
+async function haalEnergieLabelEP(adresseerbaarObjectId) {
+  // EP-online: officieel overheidsregister voor energielabels (gratis, geen API key)
+  const res = await fetch(`${EP_ONLINE}/${adresseerbaarObjectId}`, {
+    headers: { Accept: 'application/json' },
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  // Geeft array terug, meest recente eerst
+  const item = Array.isArray(data) ? data[0] : data;
+  if (!item?.energieklasse) return null;
+  return { energieklasse: item.energieklasse, berekeningType: item.berekeningType ?? null };
 }
 
 async function haalBag(pdokDoc) {

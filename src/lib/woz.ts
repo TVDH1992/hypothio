@@ -10,6 +10,7 @@ export interface WozResultaat {
   nummeraanduidingId: string;
   bouwjaar?: number | null;
   oppervlakte?: number | null;
+  energielabel?: string | null;
 }
 
 const PDOK_URL = 'https://api.pdok.nl/bzk/locatieserver/search/v3_1/free';
