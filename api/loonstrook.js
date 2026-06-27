@@ -30,7 +30,9 @@ Geef ALLEEN dit JSON terug, geen andere tekst:
 Regels:
 - brutoMaandSalaris is het maandbedrag VOOR belasting, ZONDER vakantiegeld
 - Als de loonstrook per 4 weken is, stel frequentie in op 'vierWeken'
-- ORT alleen invullen als er een structurele toeslag is, niet incidenteel overwerk
+- heeftVakantiegeld: standaard true tenzij er expliciet staat dat er geen vakantiegeld is. Kijk ook naar reserveringsregels zoals "vakantiegeld opbouw", "VG reservering" of een percentage van ~8%.
+- heeftDertiendeMaand: true als er een regel staat zoals "13e maand", "eindejaarsuitkering", "gratificatie", "EJU" of een opbouw/reservering daarvan zichtbaar is. Anders false.
+- ORT alleen invullen als er een structurele toeslag is (bijv. "onregelmatigheidstoeslag", "volcontinudienst"), niet incidenteel overwerk
 - Als iets niet zichtbaar is, gebruik 0 of false`;
 
   let message;
