@@ -73,11 +73,13 @@ export function parseFundaUrl(url: string): { adres: string; stad: string; geldi
     const stad = parts[koopIdx + 1];
     const slug = parts[koopIdx + 2];
 
-    // Slug formaat: type-id-adres-huisnummer
-    // Bijv: huis-12345678-dorpsstraat-42
     const slugParts = slug.split('-');
-    // Sla type (huis/appartement) en id (8 cijfers) over
-    const adresDelen = slugParts.slice(2);
+    // Oud formaat: huis-{8cijfers}-straat-nummer
+    // Nieuw formaat: huis-straatnaam-nummer-postcode
+    const isOudFormaat = /^\d{8}$/.test(slugParts[1] ?? '');
+    const raw = isOudFormaat ? slugParts.slice(2) : slugParts.slice(1);
+    // Postcode eraf filteren (bijv. 3332bg)
+    const adresDelen = raw.filter(d => !/^\d{4}[a-z]{2}$/i.test(d));
     const adres = adresDelen
       .map(d => d.charAt(0).toUpperCase() + d.slice(1))
       .join(' ');
