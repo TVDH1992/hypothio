@@ -1,4 +1,4 @@
-import { User, Users } from 'lucide-react';
+﻿import { User, Users } from 'lucide-react';
 import { useWizard } from '../../context/WizardContext';
 import { Button } from '../ui/Button';
 import { FormField, OptionCard } from '../ui/FormField';
@@ -19,11 +19,11 @@ export function Stap2Situatie() {
         <p className="text-sm font-medium text-[#0D1F3C]">Koop je samen of alleen?</p>
         <div className="grid grid-cols-2 gap-3">
           <OptionCard selected={situatie.metPartner === false} onClick={() => updateSituatie({ metPartner: false })}>
-            <User className={`w-7 h-7 mb-2 ${situatie.metPartner === false ? 'text-[#1ABC9C]' : 'text-gray-300'}`} />
+            <User className={`w-7 h-7 mb-2 ${situatie.metPartner === false ? 'text-[#8B35C0]' : 'text-gray-300'}`} />
             <p className={`text-sm font-medium ${situatie.metPartner === false ? 'text-[#0D1F3C]' : 'text-gray-500'}`}>Alleen</p>
           </OptionCard>
           <OptionCard selected={situatie.metPartner === true} onClick={() => updateSituatie({ metPartner: true })}>
-            <Users className={`w-7 h-7 mb-2 ${situatie.metPartner === true ? 'text-[#1ABC9C]' : 'text-gray-300'}`} />
+            <Users className={`w-7 h-7 mb-2 ${situatie.metPartner === true ? 'text-[#8B35C0]' : 'text-gray-300'}`} />
             <p className={`text-sm font-medium ${situatie.metPartner === true ? 'text-[#0D1F3C]' : 'text-gray-500'}`}>Met partner</p>
           </OptionCard>
         </div>

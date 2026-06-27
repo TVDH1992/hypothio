@@ -67,11 +67,11 @@ export function Stap5Verplichtingen() {
         />
         {verplichtingen.studieschuldStelsel && verplichtingen.studieschuldStelsel !== 'geen' && (
           <FormField
-            label="Resterende studieschuld"
-            tooltip="Actuele restschuld bij DUO (niet de oorspronkelijke schuld)"
+            label="Oorspronkelijke studieschuld"
+            tooltip="Het startbedrag dat je bij DUO hebt geleend — niet het huidige restant. Banken rekenen altijd met dit bedrag."
             type="number" min={0} prefix="€" placeholder="0"
-            value={verplichtingen.studieschuldRestant ?? ''}
-            onChange={e => updateVerplichtingen({ studieschuldRestant: Number(e.target.value) })}
+            value={verplichtingen.studieschuldOrigineel ?? ''}
+            onChange={e => updateVerplichtingen({ studieschuldOrigineel: Number(e.target.value) })}
           />
         )}
       </div>

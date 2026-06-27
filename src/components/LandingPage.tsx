@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Eye, EyeOff, ShieldCheck, Loader2, CheckCircle, TrendingUp, Calculator, Building2, ChevronDown } from 'lucide-react';
 import { Button } from './ui/Button';
 import { FormField } from './ui/FormField';
@@ -95,7 +95,7 @@ export function LandingPage({ onLogin }: Props) {
       <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-gray-100 px-4 py-3">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-[#1ABC9C] rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-[#8B35C0] rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">H</span>
             </div>
             <span className="font-bold text-[#0D1F3C]">Hypothio</span>
@@ -115,24 +115,24 @@ export function LandingPage({ onLogin }: Props) {
       {/* Hero */}
       <section className="relative overflow-hidden bg-gradient-to-br from-[#0D1F3C] via-[#0D1F3C] to-[#1a3a5c] text-white">
         <div className="absolute inset-0 opacity-5">
-          <div className="absolute top-20 left-10 w-96 h-96 bg-[#1ABC9C] rounded-full filter blur-3xl" />
-          <div className="absolute bottom-10 right-10 w-64 h-64 bg-[#1ABC9C] rounded-full filter blur-3xl" />
+          <div className="absolute top-20 left-10 w-96 h-96 bg-[#8B35C0] rounded-full filter blur-3xl" />
+          <div className="absolute bottom-10 right-10 w-64 h-64 bg-[#8B35C0] rounded-full filter blur-3xl" />
         </div>
         <div className="relative max-w-5xl mx-auto px-4 py-20 text-center">
-          <div className="inline-flex items-center gap-2 bg-[#1ABC9C]/10 border border-[#1ABC9C]/20 rounded-full px-4 py-1.5 mb-8">
-            <ShieldCheck className="w-4 h-4 text-[#1ABC9C]" />
-            <span className="text-xs text-[#1ABC9C] font-medium">Conform Nibud 2026 & AFM richtlijnen</span>
+          <div className="inline-flex items-center gap-2 bg-[#8B35C0]/10 border border-[#8B35C0]/20 rounded-full px-4 py-1.5 mb-8">
+            <ShieldCheck className="w-4 h-4 text-[#8B35C0]" />
+            <span className="text-xs text-[#8B35C0] font-medium">Conform Nibud 2026 & AFM richtlijnen</span>
           </div>
           <h1 className="text-4xl md:text-6xl font-bold leading-tight mb-6">
             Hoeveel hypotheek<br />
-            <span className="text-[#1ABC9C]">kun jij krijgen?</span>
+            <span className="text-[#8B35C0]">kun jij krijgen?</span>
           </h1>
           <p className="text-lg text-white/70 max-w-xl mx-auto mb-10 leading-relaxed">
             Bereken in 3 minuten je maximale hypotheek, vergelijk scenario's en analyseer woningen op basis van officiële normen.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button size="lg" onClick={() => { setIsLogin(false); setToonForm(true); }}
-              className="bg-[#1ABC9C] hover:bg-[#1ABC9C]/90 text-white border-0 text-base px-8">
+              className="bg-[#8B35C0] hover:bg-[#8B35C0]/90 text-white border-0 text-base px-8">
               Gratis berekening starten →
             </Button>
             <button type="button" onClick={() => { setIsLogin(true); setToonForm(true); }}
@@ -158,7 +158,7 @@ export function LandingPage({ onLogin }: Props) {
             {[
               ['🏛️', 'Nibud 2026 normtabel'],
               ['📋', 'AFM toetsrente conform regeling'],
-              ['🏠', 'NHG grens €435.000'],
+              ['🏠', 'NHG grens €470.000'],
               ['🔒', 'Data lokaal opgeslagen'],
             ].map(([emoji, label]) => (
               <div key={label} className="flex items-center gap-2">
@@ -178,9 +178,9 @@ export function LandingPage({ onLogin }: Props) {
         </div>
         <div className="grid md:grid-cols-3 gap-6">
           {FEATURES.map(({ icon: Icon, titel, sub }) => (
-            <div key={titel} className="bg-white rounded-2xl border border-gray-100 p-6 hover:border-[#1ABC9C]/30 hover:shadow-sm transition">
-              <div className="w-12 h-12 bg-[#1ABC9C]/10 rounded-xl flex items-center justify-center mb-4">
-                <Icon className="w-6 h-6 text-[#1ABC9C]" />
+            <div key={titel} className="bg-white rounded-2xl border border-gray-100 p-6 hover:border-[#8B35C0]/30 hover:shadow-sm transition">
+              <div className="w-12 h-12 bg-[#8B35C0]/10 rounded-xl flex items-center justify-center mb-4">
+                <Icon className="w-6 h-6 text-[#8B35C0]" />
               </div>
               <h3 className="font-semibold text-[#0D1F3C] mb-2">{titel}</h3>
               <p className="text-sm text-gray-400 leading-relaxed">{sub}</p>
@@ -218,7 +218,7 @@ export function LandingPage({ onLogin }: Props) {
             Maak gratis een account en bereken in 3 minuten hoeveel hypotheek jij kunt krijgen.
           </p>
           <Button size="lg" onClick={() => { setIsLogin(false); setToonForm(true); }}
-            className="bg-[#1ABC9C] hover:bg-[#1ABC9C]/90 border-0 text-base px-10">
+            className="bg-[#8B35C0] hover:bg-[#8B35C0]/90 border-0 text-base px-10">
             Gratis starten →
           </Button>
         </div>
@@ -228,7 +228,7 @@ export function LandingPage({ onLogin }: Props) {
       <footer className="border-t border-gray-100 py-8 px-4">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-gray-400">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-[#1ABC9C] rounded-md flex items-center justify-center">
+            <div className="w-6 h-6 bg-[#8B35C0] rounded-md flex items-center justify-center">
               <span className="text-white font-bold text-xs">H</span>
             </div>
             <span className="font-medium text-[#0D1F3C]">Hypothio</span>

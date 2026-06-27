@@ -1,7 +1,7 @@
 import {
   LTI_NORMEN, LtiRij, TOETSRENTES, NHG_GRENS_2026, NHG_PREMIE,
   STARTER_GRENS_2026, STARTER_MAX_LEEFTIJD, MAX_LTV,
-  ENERGIELABEL_BONUS, BELASTING_LAAG, BELASTING_HOOG, BELASTING_GRENS,
+  ENERGIELABEL_BONUS, BELASTING_LAAG,
 } from './normen';
 import type { InkomenData, VerplichtingenData, WoningData, SituatieData, Resultaat } from '../types/wizard';
 
@@ -22,11 +22,14 @@ export function berekenToetsinkomen(inkomen: Partial<InkomenData>): number {
   }
 
   const salaris = inkomen.brutoSalaris ?? 0;
-  let basis = inkomen.frequentie === 'vierWeken' ? salaris * 13.04 : salaris * 12;
+  // Jaarsalaris op basis van uitbetalingsfrequentie
+  const jaarsalaris = inkomen.frequentie === 'vierWeken' ? salaris * 13 : salaris * 12;
+  // Vakantiegeld = 8% over 12 maanden basisloon (los van 13e maand)
+  const vakantiegeld = inkomen.heeftVakantiegeld ? jaarsalaris * 0.08 : 0;
+  // 13e maand = precies 1× bruto maandsalaris (geen vakantiegeld erover)
+  const dertiendeMaand = inkomen.heeftDertiendeMaand ? salaris : 0;
 
-  if (inkomen.heeftVakantiegeld)    basis += basis * 0.08;
-  if (inkomen.heeftDertiendeMaand)  basis += basis / 13;
-
+  let basis = jaarsalaris + vakantiegeld + dertiendeMaand;
   basis += (inkomen.ortPerMaand ?? 0) * 12;
   basis += inkomen.vasterJaarbonus ?? 0;
   basis += (inkomen.alimentatieOntvangen ?? 0) * 12;
@@ -43,9 +46,10 @@ export function berekenMaandlasten(v: Partial<VerplichtingenData>): number {
   lasten += v.privateLease ?? 0;
   lasten += v.alimentatieBetalen ?? 0;
 
-  const schuld = v.studieschuldRestant ?? 0;
+  const schuld = v.studieschuldOrigineel ?? 0;
   if (schuld > 0 && v.studieschuldStelsel && v.studieschuldStelsel !== 'geen') {
-    lasten += schuld / (v.studieschuldStelsel === 'oud' ? 180 : 420);
+    // GHF: 0,45% van oorspronkelijke DUO-schuld (oud stelsel) of 0,35% (nieuw stelsel)
+    lasten += schuld * (v.studieschuldStelsel === 'oud' ? 0.0045 : 0.0035);
   }
 
   return lasten;
@@ -85,11 +89,21 @@ export function berekenResultaat(
 
   const koopsom = woning.koopsom ?? 0;
   const energielabelBonus = ENERGIELABEL_BONUS[woning.energielabel ?? 'C'] ?? 0;
-  const maxOpWoning = koopsom * MAX_LTV + energielabelBonus;
 
-  const effectiefMax = koopsom > 0 ? Math.min(maxOpInkomen, maxOpWoning) : maxOpInkomen;
+  // LTV-grens puur op woningwaarde (100%); energiebonus wordt ALTIJD bovenop effectief max opgeteld
+  const maxOpWoning = koopsom * MAX_LTV;
+  const baseMax = koopsom > 0 ? Math.min(maxOpInkomen, maxOpWoning) : maxOpInkomen;
+  let effectiefMax = baseMax + energielabelBonus;
 
-  const nhgMogelijk = koopsom > 0 && koopsom <= NHG_GRENS_2026 && effectiefMax <= NHG_GRENS_2026;
+  const hypotheekvorm = woning.hypotheekvorm ?? 'annuitair';
+
+  // Aflossingsvrij: wettelijk max 50% van woningwaarde (GHF art. 7)
+  if (hypotheekvorm === 'aflossingsvrij' && koopsom > 0) {
+    effectiefMax = Math.min(effectiefMax, koopsom * 0.5);
+  }
+
+  // NHG: koopsom ≤ grens én NHG vereist annuïtair of lineair aflossing
+  const nhgMogelijk = koopsom > 0 && koopsom <= NHG_GRENS_2026 && hypotheekvorm !== 'aflossingsvrij';
 
   const leeftijd = situatie.leeftijd ?? 0;
   const startersvrijstelling =
@@ -101,7 +115,6 @@ export function berekenResultaat(
 
   // NHG-premie wordt meegefinancierd
   const hypotheekBedrag = nhgMogelijk ? effectiefMax * (1 + NHG_PREMIE) : effectiefMax;
-  const hypotheekvorm   = woning.hypotheekvorm ?? 'annuitair';
 
   let brutoMaandlast: number;
   if (hypotheekvorm === 'lineair') {
@@ -115,11 +128,13 @@ export function berekenResultaat(
   }
 
   // Netto maandlast (eerste maand benadering)
-  const belastingtarief  = toetsinkomen > BELASTING_GRENS ? BELASTING_HOOG : BELASTING_LAAG;
-  const eersteRente      = hypotheekBedrag * toetsrente / 12;
-  const belastingvoordeel = eersteRente * belastingtarief;
-  const ewfMaand         = koopsom * 0.0035 / 12;
-  const nettoMaandlast   = brutoMaandlast - belastingvoordeel + ewfMaand * belastingtarief;
+  // HRA max op basistarief (art. 3.120a Wet IB 2001); aflossingsvrij gesloten na 2013: geen HRA
+  const belastingtarief   = BELASTING_LAAG;
+  const eersteRente       = hypotheekBedrag * toetsrente / 12;
+  const heeftHRA          = hypotheekvorm !== 'aflossingsvrij';
+  const belastingvoordeel = heeftHRA ? eersteRente * belastingtarief : 0;
+  const ewfMaand          = koopsom * 0.0035 / 12;
+  const nettoMaandlast    = brutoMaandlast - belastingvoordeel + ewfMaand * belastingtarief;
 
   // Bijkomende kosten
   const overdracht = startersvrijstelling ? 0 : koopsom * 0.02;

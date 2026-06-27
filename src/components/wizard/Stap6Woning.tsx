@@ -1,13 +1,12 @@
-import { useWizard } from '../../context/WizardContext';
+﻿import { useWizard } from '../../context/WizardContext';
 import { Button } from '../ui/Button';
 import { FormField, SelectField } from '../ui/FormField';
 import type { Energielabel, Hypotheekvorm, RentevastePeriode } from '../../types/wizard';
-import { TOETSRENTES } from '../../lib/normen';
 
 const energielabels: Energielabel[] = ['A++++','A+++','A++','A+','A','B','C','D','E','F','G'];
 
 export function Stap6Woning() {
-  const { woning, updateWoning, volgende, vorige, rol } = useWizard();
+  const { woning, updateWoning, volgende, vorige, rol, actueleRentes } = useWizard();
   const adv = rol === 'adviseur';
 
   return (
@@ -52,22 +51,24 @@ export function Stap6Woning() {
             >
               <span className="font-semibold">{p}jr</span>
               <br />
-              <span className="text-xs opacity-70">{((TOETSRENTES[p] ?? 0) * 100).toFixed(1)}%</span>
+              <span className="text-xs opacity-70">{((actueleRentes[p] ?? 0) * 100).toFixed(1)}%</span>
             </button>
           ))}
         </div>
       </div>
 
+      <SelectField
+        label={adv ? 'Energielabel woning' : 'Energielabel (optioneel)'}
+        tooltip={adv
+          ? 'A++ of hoger geeft recht op extra leenruimte (TRHK 2026)'
+          : 'Bij label A++ of hoger mag je tot €15.000–€40.000 extra lenen'}
+        options={energielabels.map(l => ({ value: l, label: l }))}
+        value={woning.energielabel ?? 'C'}
+        onChange={e => updateWoning({ energielabel: e.target.value as Energielabel })}
+      />
+
       {adv && (
         <>
-          <SelectField
-            label="Energielabel woning"
-            tooltip="A++ of hoger geeft recht op extra leenruimte"
-            options={energielabels.map(l => ({ value: l, label: l }))}
-            value={woning.energielabel ?? 'C'}
-            onChange={e => updateWoning({ energielabel: e.target.value as Energielabel })}
-          />
-
           <div className="space-y-2">
             <p className="text-sm font-medium text-[#0D1F3C]">Hypotheekvorm</p>
             <div className="space-y-2">
@@ -82,7 +83,7 @@ export function Stap6Woning() {
                   onClick={() => updateWoning({ hypotheekvorm: val })}
                   className={`w-full p-3.5 rounded-xl border-2 text-left transition cursor-pointer
                     ${(woning.hypotheekvorm ?? 'annuitair') === val
-                      ? 'border-[#1ABC9C] bg-[#1ABC9C]/5'
+                      ? 'border-[#8B35C0] bg-[#8B35C0]/5'
                       : 'border-gray-200 hover:border-gray-300'}`}
                 >
                   <p className={`text-sm font-medium ${(woning.hypotheekvorm ?? 'annuitair') === val ? 'text-[#0D1F3C]' : 'text-gray-500'}`}>{lbl}</p>

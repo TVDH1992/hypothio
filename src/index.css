@@ -4,6 +4,18 @@
   box-sizing: border-box;
 }
 
+@keyframes stap-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-stap { animation: stap-in 0.22s ease-out; }
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up { animation: fade-up 0.3s ease-out; }
+
 body {
   margin: 0;
   font-family: 'Inter', sans-serif;

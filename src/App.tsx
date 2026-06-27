@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { WizardProvider, useWizard } from './context/WizardContext';
 import { AppProvider, useApp } from './context/AppContext';
 import { supabase } from './lib/supabase';
@@ -38,7 +38,7 @@ function AppShell({ sessie, onUitloggen }: { sessie: Sessie; onUitloggen: () => 
       <header className="bg-white border-b border-gray-100 px-4 py-4 sticky top-0 z-40">
         <div className="max-w-xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-[#1ABC9C] rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-[#8B35C0] rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">H</span>
             </div>
             <span className="font-bold text-[#0D1F3C]">Hypothio</span>
@@ -62,9 +62,9 @@ function AppShell({ sessie, onUitloggen }: { sessie: Sessie; onUitloggen: () => 
         </div>
       )}
 
-      <main className="max-w-xl mx-auto px-4 py-8 pb-28">
+      <main className="max-w-xl mx-auto px-4 py-8" style={{ paddingBottom: 'calc(7rem + env(safe-area-inset-bottom))' }}>
         {tab === 'berekenen' && (
-          <>
+          <div key={stap} className="animate-stap">
             {stap === 0 && <HomeScreen />}
             {stap === 1 && <Stap1Welkom />}
             {stap === 2 && <Stap2Situatie />}
@@ -74,7 +74,7 @@ function AppShell({ sessie, onUitloggen }: { sessie: Sessie; onUitloggen: () => 
             {stap === 6 && <Stap6Woning />}
             {stap === 7 && <Stap7Berekenen />}
             {stap === 8 && <Stap8Resultaat />}
-          </>
+          </div>
         )}
         {tab === 'woningen' && <WoningenScreen />}
         {tab === 'profiel'  && <ProfielScreen onUitloggen={onUitloggen} />}
@@ -131,7 +131,7 @@ export default function App() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center" style={{ fontFamily: "'Inter', sans-serif" }}>
         <div className="text-center space-y-3">
-          <div className="w-10 h-10 bg-[#1ABC9C] rounded-xl flex items-center justify-center mx-auto">
+          <div className="w-10 h-10 bg-[#8B35C0] rounded-xl flex items-center justify-center mx-auto">
             <span className="text-white font-bold">H</span>
           </div>
           <p className="text-sm text-gray-400">Laden...</p>

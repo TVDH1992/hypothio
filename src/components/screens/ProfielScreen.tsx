@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+﻿import { useRef, useState } from 'react';
 import { RotateCcw, LogOut, Calculator, Upload, CheckCircle, Loader2, Users } from 'lucide-react';
 import { useWizard } from '../../context/WizardContext';
 import { useApp } from '../../context/AppContext';
@@ -64,12 +64,12 @@ function LoonstrookUpload({
         onClick={() => fileRef.current?.click()}
         disabled={status === 'laden'}
         className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition cursor-pointer text-left
-          ${isSucces ? 'border-emerald-300 bg-emerald-50' : 'border-dashed border-gray-200 hover:border-[#1ABC9C] hover:bg-[#1ABC9C]/5'}`}
+          ${isSucces ? 'border-emerald-300 bg-emerald-50' : 'border-dashed border-gray-200 hover:border-[#8B35C0] hover:bg-[#8B35C0]/5'}`}
       >
         <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0
           ${isSucces ? 'bg-emerald-100' : 'bg-gray-100'}`}>
           {status === 'laden'
-            ? <Loader2 className="w-5 h-5 text-[#1ABC9C] animate-spin" />
+            ? <Loader2 className="w-5 h-5 text-[#8B35C0] animate-spin" />
             : isSucces
             ? <CheckCircle className="w-5 h-5 text-emerald-500" />
             : <Upload className="w-5 h-5 text-gray-400" />}
@@ -133,7 +133,7 @@ export function ProfielScreen({ onUitloggen }: Props) {
       {/* Loonstroken uploaden */}
       <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-4">
         <div className="flex items-center gap-2 mb-1">
-          <Users className="w-4 h-4 text-[#1ABC9C]" />
+          <Users className="w-4 h-4 text-[#8B35C0]" />
           <p className="text-sm font-semibold text-[#0D1F3C]">Loonstroken uploaden</p>
         </div>
         <p className="text-xs text-gray-400 -mt-2">Upload je loonstrook — we vullen je salaris automatisch in.</p>
@@ -183,7 +183,7 @@ export function ProfielScreen({ onUitloggen }: Props) {
           <Calculator className="w-8 h-8 mx-auto mb-2 text-gray-200" />
           <p className="text-sm text-gray-400">Nog geen berekening gedaan.</p>
           <button type="button" onClick={() => { setStap(1); setTab('berekenen'); }}
-            className="text-sm text-[#1ABC9C] mt-2 hover:opacity-75 transition cursor-pointer">
+            className="text-sm text-[#8B35C0] mt-2 hover:opacity-75 transition cursor-pointer">
             Start een berekening →
           </button>
         </div>

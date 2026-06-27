@@ -1,10 +1,28 @@
-import { CheckCircle, XCircle, AlertTriangle, RotateCcw, ShieldCheck, TrendingUp, Lightbulb, ArrowRight } from 'lucide-react';
+﻿import { useEffect, useState } from 'react';
+import { CheckCircle, XCircle, AlertTriangle, RotateCcw, ShieldCheck, TrendingUp, Lightbulb, ArrowRight, Home } from 'lucide-react';
 import { useWizard } from '../../context/WizardContext';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../ui/Button';
 import { berekenResultaat } from '../../lib/berekening';
 import { TOETSRENTES, NHG_GRENS_2026, STARTER_GRENS_2026 } from '../../lib/normen';
+import { laadWoningen } from '../../lib/profiel';
 import type { RentevastePeriode } from '../../types/wizard';
+
+function useCountUp(target: number, duration = 900): number {
+  const [val, setVal] = useState(0);
+  useEffect(() => {
+    if (target === 0) return;
+    const start = Date.now();
+    const tick = () => {
+      const t = Math.min((Date.now() - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setVal(Math.round(target * eased));
+      if (t < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, [target, duration]);
+  return val;
+}
 
 function euro(n: number) {
   return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
@@ -47,6 +65,7 @@ export function Stap8Resultaat() {
   });
 
   const adv = rol === 'adviseur';
+  const animatedMax = useCountUp(effectieveMaxHypotheek);
   const {
     effectieveMaxHypotheek, brutoMaandlast, nettoMaandlast,
     nhgMogelijk, startersvrijstelling, energielabelBonus,
@@ -66,14 +85,28 @@ export function Stap8Resultaat() {
     <div className="space-y-5">
 
       {/* Hoofduitkomst */}
-      <div className="bg-[#0D1F3C] text-white rounded-2xl p-6 text-center space-y-1">
-        <p className="text-sm text-white/60">{adv ? 'Maximale hypotheek' : 'Jij kunt maximaal lenen'}</p>
-        <p className="text-4xl font-bold tracking-tight">{euro(effectieveMaxHypotheek)}</p>
+      <div className="bg-[#0D1F3C] text-white rounded-2xl p-6 text-center">
+        <p className="text-sm text-white/60 mb-1">{adv ? 'Maximale hypotheek' : 'Jij kunt maximaal lenen'}</p>
+        <p className="text-4xl font-bold tracking-tight">{euro(adv ? effectieveMaxHypotheek : animatedMax)}</p>
         {energielabelBonus > 0 && (
-          <p className="text-xs text-[#1ABC9C] mt-1">Inclusief {euro(energielabelBonus)} energielabel bonus</p>
+          <p className="text-xs text-[#8B35C0] mt-1">Inclusief {euro(energielabelBonus)} energielabel bonus</p>
         )}
-        {!adv && (
-          <p className="text-xs text-white/50 mt-2">
+        {!adv && koopsom === 0 && (
+          <>
+            <div className="border-t border-white/10 mt-4 pt-4">
+              <p className="text-xs text-white/50 mb-0.5">Dit betekent een huis tot ca.</p>
+              <p className="text-2xl font-bold text-[#8B35C0]">
+                {euro(effectieveMaxHypotheek + eigenGeld)}
+              </p>
+              {eigenGeld > 0 && (
+                <p className="text-xs text-white/40 mt-0.5">hypotheek + {euro(eigenGeld)} eigen geld</p>
+              )}
+              <p className="text-[10px] text-white/30 mt-1">bijkomende kosten (ca. €6.000–€15.000) hier nog niet in</p>
+            </div>
+          </>
+        )}
+        {!adv && koopsom > 0 && (
+          <p className="text-xs text-white/50 mt-3">
             Op basis van jouw inkomen van {euro(toetsinkomen)} per jaar · normen 2026
           </p>
         )}
@@ -120,7 +153,7 @@ export function Stap8Resultaat() {
             : 'Na belastingvoordeel — dit is wat je écht elke maand kwijt bent'}
         />
         {!adv && (
-          <div className="mt-3 p-3 bg-[#1ABC9C]/5 rounded-xl">
+          <div className="mt-3 p-3 bg-[#8B35C0]/5 rounded-xl">
             <p className="text-xs text-gray-500">
               <span className="font-medium text-[#0D1F3C]">Wat betekent dit?</span> Je betaalt rente en lost af. De rente is deels aftrekbaar van de belasting, waardoor je netto minder betaalt dan het brutobedrag. Dit is een indicatie — de werkelijke maandlast hangt af van de actuele rente.
             </p>
@@ -187,13 +220,13 @@ export function Stap8Resultaat() {
       {!adv && (
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <div className="flex items-center gap-2 mb-3">
-            <Lightbulb className="w-4 h-4 text-[#1ABC9C]" />
+            <Lightbulb className="w-4 h-4 text-[#8B35C0]" />
             <p className="text-sm font-semibold text-[#0D1F3C]">Wil je meer lenen?</p>
           </div>
           <div className="space-y-2.5">
             {heeftVerplichtingen && (
               <div className="flex gap-2.5 items-start">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#1ABC9C] mt-1.5 shrink-0" />
+                <div className="w-1.5 h-1.5 rounded-full bg-[#8B35C0] mt-1.5 shrink-0" />
                 <p className="text-xs text-gray-600">
                   <span className="font-medium text-[#0D1F3C]">Lossen leningen af.</span> Je hebt lopende verplichtingen van {euro(maandlastenVerplichtingen)}/mnd die je maximale hypotheek verlagen. Aflossen vóór de aanvraag kan helpen.
                 </p>
@@ -201,20 +234,20 @@ export function Stap8Resultaat() {
             )}
             {!heeftPartner && (
               <div className="flex gap-2.5 items-start">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#1ABC9C] mt-1.5 shrink-0" />
+                <div className="w-1.5 h-1.5 rounded-full bg-[#8B35C0] mt-1.5 shrink-0" />
                 <p className="text-xs text-gray-600">
                   <span className="font-medium text-[#0D1F3C]">Met een partner leen je meer.</span> Bij twee inkomens wordt het tweede inkomen voor een groot deel meegenomen.
                 </p>
               </div>
             )}
             <div className="flex gap-2.5 items-start">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#1ABC9C] mt-1.5 shrink-0" />
+              <div className="w-1.5 h-1.5 rounded-full bg-[#8B35C0] mt-1.5 shrink-0" />
               <p className="text-xs text-gray-600">
                 <span className="font-medium text-[#0D1F3C]">Kies een energiezuinige woning.</span> Bij label A++ of hoger mag je tot €40.000 extra lenen bovenop het normale maximum.
               </p>
             </div>
             <div className="flex gap-2.5 items-start">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#1ABC9C] mt-1.5 shrink-0" />
+              <div className="w-1.5 h-1.5 rounded-full bg-[#8B35C0] mt-1.5 shrink-0" />
               <p className="text-xs text-gray-600">
                 <span className="font-medium text-[#0D1F3C]">Salaris verwacht te stijgen?</span> Sommige geldverstrekkers nemen een toekomstig hoger inkomen mee bij een vaste aanstelling of stijgende schaal.
               </p>
@@ -241,7 +274,7 @@ export function Stap8Resultaat() {
       {/* Scenario vergelijker */}
       <div className="bg-white rounded-2xl border border-gray-100 p-5">
         <div className="flex items-center gap-2 mb-3">
-          <TrendingUp className="w-4 h-4 text-[#1ABC9C]" />
+          <TrendingUp className="w-4 h-4 text-[#8B35C0]" />
           <p className="text-sm font-semibold text-[#0D1F3C]">
             {adv ? 'Vergelijk rentevaste periodes' : 'Kies je rentevaste periode'}
           </p>
@@ -263,12 +296,12 @@ export function Stap8Resultaat() {
               {scenarios.map(s => {
                 const isHuidig = s.periode === (woning.rentevastePeriode ?? 10);
                 return (
-                  <tr key={s.periode} className={isHuidig ? 'bg-[#1ABC9C]/5' : ''}>
-                    <td className={`py-2.5 pr-2 font-medium ${isHuidig ? 'text-[#1ABC9C]' : 'text-[#0D1F3C]'}`}>
+                  <tr key={s.periode} className={isHuidig ? 'bg-[#8B35C0]/5' : ''}>
+                    <td className={`py-2.5 pr-2 font-medium ${isHuidig ? 'text-[#8B35C0]' : 'text-[#0D1F3C]'}`}>
                       {s.periode}j {isHuidig && <span className="text-[10px] font-normal ml-1">(jouw keuze)</span>}
                     </td>
                     <td className="py-2.5 text-right text-gray-500">{(s.rente * 100).toFixed(1)}%</td>
-                    <td className={`py-2.5 text-right font-semibold ${isHuidig ? 'text-[#1ABC9C]' : 'text-gray-700'}`}>{euro(s.max)}</td>
+                    <td className={`py-2.5 text-right font-semibold ${isHuidig ? 'text-[#8B35C0]' : 'text-gray-700'}`}>{euro(s.max)}</td>
                     <td className="py-2.5 text-right text-gray-500">{euro(s.maandlast)}</td>
                   </tr>
                 );
@@ -291,7 +324,7 @@ export function Stap8Resultaat() {
           { label: 'NHG 2026',   sub: `Grens ${euro(NHG_GRENS_2026)}` },
         ].map(b => (
           <div key={b.label} className="bg-gray-50 rounded-xl p-3 text-center">
-            <ShieldCheck className="w-4 h-4 text-[#1ABC9C] mx-auto mb-1" />
+            <ShieldCheck className="w-4 h-4 text-[#8B35C0] mx-auto mb-1" />
             <p className="text-xs font-semibold text-[#0D1F3C]">{b.label}</p>
             <p className="text-[10px] text-gray-400">{b.sub}</p>
           </div>
@@ -310,6 +343,53 @@ export function Stap8Resultaat() {
         </div>
       )}
 
+      {/* Opgeslagen Funda woningen */}
+      {(() => {
+        const woningen = laadWoningen();
+        if (woningen.length === 0) return null;
+        const eigenGeld = woning.eigenGeld ?? 0;
+        return (
+          <div className="bg-white rounded-2xl border border-gray-100 p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Home className="w-4 h-4 text-[#8B35C0]" />
+                <p className="text-sm font-semibold text-[#0D1F3C]">Jouw woningen op Funda</p>
+              </div>
+              <button type="button" onClick={() => setTab('woningen')} className="text-xs text-[#8B35C0] hover:underline cursor-pointer">
+                Alles zien →
+              </button>
+            </div>
+            <div className="space-y-2">
+              {woningen.map(w => {
+                const benodigdHypotheek = w.vraagprijs - eigenGeld;
+                const past = benodigdHypotheek <= effectieveMaxHypotheek;
+                const delta = effectieveMaxHypotheek - benodigdHypotheek;
+                return (
+                  <a key={w.id} href={w.fundaUrl} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:border-[#8B35C0]/30 transition">
+                    <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${past ? 'bg-emerald-400' : 'bg-red-400'}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-[#0D1F3C] truncate">{w.adres}</p>
+                      <p className="text-xs text-gray-400">{w.stad} · {euro(w.vraagprijs)}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className={`text-xs font-semibold ${past ? 'text-emerald-600' : 'text-red-500'}`}>
+                        {past ? 'past ✓' : 'past niet'}
+                      </p>
+                      <p className="text-[10px] text-gray-400">
+                        {past
+                          ? `${euro(delta)} ruimte`
+                          : `${euro(Math.abs(delta))} te duur`}
+                      </p>
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
       <div className="pt-2 space-y-3">
         <Button onClick={() => setTab('woningen')} className="w-full">
           {adv ? 'Woningen checken →' : 'Bekijk woningen binnen dit budget →'}
@@ -319,7 +399,7 @@ export function Stap8Resultaat() {
         </Button>
         {!adv && (
           <div className="flex gap-2 p-4 bg-[#0D1F3C]/5 rounded-xl items-start">
-            <ArrowRight className="w-4 h-4 text-[#1ABC9C] shrink-0 mt-0.5" />
+            <ArrowRight className="w-4 h-4 text-[#8B35C0] shrink-0 mt-0.5" />
             <p className="text-xs text-gray-500">
               <span className="font-medium text-[#0D1F3C]">Volgende stap:</span> Sla je berekening op via je profiel en deel hem met een hypotheekadviseur. Deze berekening is een indicatie — een adviseur kan precies uitzoeken wat in jouw situatie mogelijk is.
             </p>

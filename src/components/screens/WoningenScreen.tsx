@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+﻿import { useState, useRef, useEffect } from 'react';
 import {
   Search, CheckCircle, XCircle, AlertTriangle, ExternalLink,
   Trash2, Plus, TrendingUp, Gavel, Info, Loader2,
@@ -263,7 +263,7 @@ export function WoningenScreen() {
           <div className="relative flex items-center">
             <Search className="absolute left-3 w-4 h-4 text-gray-400 pointer-events-none" />
             <input
-              className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 text-[#0D1F3C] bg-white focus:outline-none focus:ring-2 focus:ring-[#1ABC9C] focus:border-transparent transition placeholder:text-gray-300 text-sm"
+              className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 text-[#0D1F3C] bg-white focus:outline-none focus:ring-2 focus:ring-[#8B35C0] focus:border-transparent transition placeholder:text-gray-300 text-sm"
               placeholder="bijv. Dorpsstraat 1 Amsterdam"
               value={zoekterm}
               onChange={e => { setZoekterm(e.target.value); setGeselecteerd(null); setWozAnalyse(null); }}
@@ -325,8 +325,8 @@ export function WoningenScreen() {
                   <p className="text-3xl font-bold">{euro(wozAnalyse.woz.wozWaarde)}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-[#1ABC9C]/80">Geschatte marktwaarde</p>
-                  <p className="text-xl font-bold text-[#1ABC9C]">{euro(wozAnalyse.marktwaarde)}</p>
+                  <p className="text-xs text-[#8B35C0]/80">Geschatte marktwaarde</p>
+                  <p className="text-xl font-bold text-[#8B35C0]">{euro(wozAnalyse.marktwaarde)}</p>
                   <p className="text-[10px] text-white/40 mt-0.5">WOZ × 1,10 (indicatief)</p>
                 </div>
               </div>
@@ -374,7 +374,7 @@ export function WoningenScreen() {
             </div>
 
             <button type="button" onClick={resetWoz}
-              className="text-xs text-[#1ABC9C] hover:opacity-75 transition cursor-pointer">
+              className="text-xs text-[#8B35C0] hover:opacity-75 transition cursor-pointer">
               ← Nieuw adres zoeken
             </button>
           </div>
@@ -393,20 +393,20 @@ export function WoningenScreen() {
             )}
           </div>
           <button type="button" onClick={() => setToonFundaForm(v => !v)}
-            className="flex items-center gap-1.5 text-xs text-[#1ABC9C] font-medium hover:opacity-75 transition cursor-pointer">
+            className="flex items-center gap-1.5 text-xs text-[#8B35C0] font-medium hover:opacity-75 transition cursor-pointer">
             <Plus className="w-3.5 h-3.5" /> Toevoegen
           </button>
         </div>
 
         {/* Funda form */}
         {toonFundaForm && (
-          <div className="bg-white rounded-2xl border border-[#1ABC9C]/30 p-5 space-y-4 mb-4">
+          <div className="bg-white rounded-2xl border border-[#8B35C0]/30 p-5 space-y-4 mb-4">
             <FormField label="Funda link" placeholder="https://www.funda.nl/koop/..."
               tooltip="Plak de Funda URL — we halen de waarde automatisch op"
               value={fundaUrl} onChange={e => verwerkFundaUrl(e.target.value)} />
 
             {fundaLaden && (
-              <div className="flex items-center gap-2 py-2 text-sm text-[#1ABC9C]">
+              <div className="flex items-center gap-2 py-2 text-sm text-[#8B35C0]">
                 <Loader2 className="w-4 h-4 animate-spin" /> Adres opzoeken...
               </div>
             )}
@@ -452,7 +452,7 @@ export function WoningenScreen() {
             )}
 
             {fundaAnalyseLaden && (
-              <div className="flex items-center gap-2 py-2 text-sm text-[#1ABC9C]">
+              <div className="flex items-center gap-2 py-2 text-sm text-[#8B35C0]">
                 <Loader2 className="w-4 h-4 animate-spin" /> AI analyseert woning...
               </div>
             )}
@@ -485,7 +485,7 @@ export function WoningenScreen() {
 
                 <div className="bg-white rounded-lg p-3">
                   <p className="text-xs font-medium text-[#0D1F3C] mb-1 flex items-center gap-1">
-                    <Gavel className="w-3.5 h-3.5 text-[#1ABC9C]" /> Biedadvies
+                    <Gavel className="w-3.5 h-3.5 text-[#8B35C0]" /> Biedadvies
                   </p>
                   <p className="text-sm text-gray-700">{fundaAnalyse.biedadvies}</p>
                 </div>
@@ -546,7 +546,7 @@ export function WoningenScreen() {
                     <div className="text-right">
                       <p className="text-xs text-gray-400">{huispediaData.laasteVerkoopJaar}</p>
                       {huispediaData.jarenInBezit !== undefined && (
-                        <p className="text-xs text-[#1ABC9C] font-medium">
+                        <p className="text-xs text-[#8B35C0] font-medium">
                           ~{huispediaData.jarenInBezit} jaar in bezit
                         </p>
                       )}

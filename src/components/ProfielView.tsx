@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Plus, Trash2, ExternalLink, CheckCircle, XCircle, RotateCcw, User } from 'lucide-react';
 import { useWizard } from '../context/WizardContext';
 import { Button } from './ui/Button';
@@ -82,8 +82,8 @@ export function ProfielView() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-[#1ABC9C]/10 rounded-full flex items-center justify-center shrink-0">
-          <User className="w-5 h-5 text-[#1ABC9C]" />
+        <div className="w-10 h-10 bg-[#8B35C0]/10 rounded-full flex items-center justify-center shrink-0">
+          <User className="w-5 h-5 text-[#8B35C0]" />
         </div>
         <div>
           <h2 className="text-xl font-bold text-[#0D1F3C]">Hoi {sessie.naam}</h2>
@@ -103,7 +103,7 @@ export function ProfielView() {
       {!resultaat && !profiel && (
         <div className="text-center py-8 text-gray-400 bg-white rounded-2xl border border-gray-100">
           <p className="text-sm">Doe eerst een berekening om je profiel te activeren.</p>
-          <button type="button" onClick={() => setStap(1)} className="text-sm text-[#1ABC9C] mt-2 hover:opacity-75 transition cursor-pointer">
+          <button type="button" onClick={() => setStap(1)} className="text-sm text-[#8B35C0] mt-2 hover:opacity-75 transition cursor-pointer">
             Start berekening →
           </button>
         </div>
@@ -117,7 +117,7 @@ export function ProfielView() {
             <button
               type="button"
               onClick={() => setToonWoningForm(v => !v)}
-              className="flex items-center gap-1.5 text-xs text-[#1ABC9C] font-medium hover:opacity-75 transition cursor-pointer"
+              className="flex items-center gap-1.5 text-xs text-[#8B35C0] font-medium hover:opacity-75 transition cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               Woning toevoegen
@@ -126,7 +126,7 @@ export function ProfielView() {
 
           {/* Woning toevoegen form */}
           {toonWoningForm && (
-            <div className="bg-white rounded-2xl border border-[#1ABC9C]/30 p-5 space-y-4">
+            <div className="bg-white rounded-2xl border border-[#8B35C0]/30 p-5 space-y-4">
               <FormField
                 label="Funda link"
                 tooltip="Plak de volledige URL van de woningpagina op Funda"

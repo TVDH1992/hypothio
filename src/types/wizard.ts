@@ -25,7 +25,7 @@ export interface VerplichtingenData {
   creditcardLimiet: number;
   privateLease: number;
   studieschuldStelsel: StudieschuldStelsel;
-  studieschuldRestant: number;
+  studieschuldOrigineel: number;
   alimentatieBetalen: number;
   bkrMelding: boolean;
 }

@@ -1,8 +1,15 @@
-import { useState, useRef } from 'react';
+﻿import { useState, useRef } from 'react';
 import { Upload, CheckCircle, Loader2 } from 'lucide-react';
 import { useWizard } from '../../context/WizardContext';
 import { Button } from '../ui/Button';
 import { FormField, Toggle } from '../ui/FormField';
+import { berekenToetsinkomen } from '../../lib/berekening';
+import { LTI_NORMEN } from '../../lib/normen';
+
+function euroKort(n: number) {
+  if (n >= 1000) return `€ ${Math.round(n / 1000).toLocaleString('nl-NL')}.000`;
+  return `€ ${n.toLocaleString('nl-NL')}`;
+}
 
 type UploadStatus = 'idle' | 'laden' | 'succes' | 'fout';
 
@@ -14,6 +21,12 @@ export function Stap3Inkomen1() {
   const fileRef = useRef<HTMLInputElement>(null);
   const isValid = (inkomen1.brutoSalaris ?? 0) > 0;
   const adv = rol === 'adviseur';
+
+  const toetsinkomen = berekenToetsinkomen(inkomen1);
+  const ltiFactor = toetsinkomen > 0
+    ? (LTI_NORMEN.find(r => toetsinkomen <= r.maxInkomen)?.factor ?? LTI_NORMEN[LTI_NORMEN.length - 1].factor)
+    : 0;
+  const liveSchatting = toetsinkomen > 0 ? Math.round(toetsinkomen * ltiFactor / 1000) * 1000 : 0;
 
   async function verwerkBestand(file: File) {
     setUploadStatus('laden');
@@ -80,11 +93,11 @@ export function Stap3Inkomen1() {
             className={`w-full flex items-center justify-center gap-3 p-4 rounded-xl border-2 border-dashed transition cursor-pointer
               ${uploadStatus === 'succes'
                 ? 'border-emerald-400 bg-emerald-50'
-                : 'border-gray-200 hover:border-[#1ABC9C] hover:bg-[#1ABC9C]/5'}`}
+                : 'border-gray-200 hover:border-[#8B35C0] hover:bg-[#8B35C0]/5'}`}
           >
-            {uploadStatus === 'laden' && <Loader2 className="w-5 h-5 text-[#1ABC9C] animate-spin" />}
+            {uploadStatus === 'laden' && <Loader2 className="w-5 h-5 text-[#8B35C0] animate-spin" />}
             {uploadStatus === 'succes' && <CheckCircle className="w-5 h-5 text-emerald-500" />}
-            {(uploadStatus === 'idle' || uploadStatus === 'fout') && <Upload className="w-5 h-5 text-[#1ABC9C]" />}
+            {(uploadStatus === 'idle' || uploadStatus === 'fout') && <Upload className="w-5 h-5 text-[#8B35C0]" />}
             <div className="text-left">
               <p className={`text-sm font-medium ${uploadStatus === 'succes' ? 'text-emerald-700' : 'text-[#0D1F3C]'}`}>
                 {uploadStatus === 'laden' && 'Loonstrook lezen...'}
@@ -122,6 +135,19 @@ export function Stap3Inkomen1() {
         value={inkomen1.brutoSalaris ?? ''}
         onChange={e => updateInkomen1({ brutoSalaris: Number(e.target.value) })}
       />
+
+      {/* Live preview — alleen voor consument, zodra er iets ingevuld is */}
+      {!adv && liveSchatting > 0 && (
+        <div className="animate-fade-up flex items-center justify-between bg-[#0D1F3C]/5 rounded-xl p-3.5">
+          <div>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">Globale schatting</p>
+            <p className="text-xl font-bold text-[#0D1F3C]">{euroKort(liveSchatting)}</p>
+          </div>
+          <p className="text-xs text-gray-400 text-right leading-relaxed">
+            op basis van<br />dit inkomen
+          </p>
+        </div>
+      )}
 
       <div className="space-y-2">
         <Toggle
