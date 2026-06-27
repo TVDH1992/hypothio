@@ -85,7 +85,7 @@ export function berekenResultaat(
   const energielabelBonus = ENERGIELABEL_BONUS[woning.energielabel ?? 'C'] ?? 0;
   const maxOpWoning = koopsom * MAX_LTV + energielabelBonus;
 
-  const effectiefMax = Math.min(maxOpInkomen, maxOpWoning);
+  const effectiefMax = koopsom > 0 ? Math.min(maxOpInkomen, maxOpWoning) : maxOpInkomen;
 
   const nhgMogelijk = koopsom > 0 && koopsom <= NHG_GRENS_2026 && effectiefMax <= NHG_GRENS_2026;
 

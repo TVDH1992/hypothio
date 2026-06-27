@@ -114,7 +114,9 @@ export function Stap8Resultaat() {
             : (adv ? 'Geen NHG' : 'NHG is niet van toepassing')}
           sub={nhgMogelijk
             ? (adv ? 'Premie: 0,6% van lening. Lagere rente, achtervang bij betalingsproblemen.' : 'Dit geeft je recht op een lagere rente en een vangnet als je de hypotheek niet meer kunt betalen.')
-            : (adv ? `Koopsom boven NHG-grens van €435.000` : `De woning is te duur voor NHG (grens: €435.000)`)}
+            : koopsom === 0
+              ? 'Vul een koopsom in om de NHG-check te doen'
+              : (adv ? `Koopsom boven NHG-grens van €435.000` : `De woning is te duur voor NHG (grens: €435.000)`)}
         />
         {situatie.isStarter && (
           <Badge
