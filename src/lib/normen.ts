@@ -1,8 +1,8 @@
 // Alle normen leven hier — in productie ophalen uit Supabase.
 
-export const NHG_GRENS_2026 = 435_000;
-export const NHG_PREMIE = 0.006;
-export const STARTER_GRENS_2026 = 510_000;
+export const NHG_GRENS_2026 = 470_000;       // Vastgesteld NHG 2026
+export const NHG_PREMIE = 0.006;             // 0,6% borgtochtprovisie
+export const STARTER_GRENS_2026 = 555_000;   // Startersvrijstelling grens 2026
 export const STARTER_MAX_LEEFTIJD = 35;
 export const MAX_LTV = 1.0;
 
@@ -43,13 +43,15 @@ export const LTI_NORMEN: LtiRij[] = [
   { maxInkomen: Infinity, factor: 4.68 },
 ];
 
+// Energielabel extra leenruimte 2026 (Tijdelijke Regeling Hypothecair Krediet)
+// A++++ daalde van €50k naar €40k; A++ van €25k naar €15k
 export const ENERGIELABEL_BONUS: Partial<Record<string, number>> = {
-  'A++++': 50_000,
-  'A+++':  50_000,
-  'A++':   25_000,
-  'A+':    25_000,
+  'A++++': 40_000,
+  'A+++':  40_000,
+  'A++':   15_000,
+  'A+':    10_000,
 };
 
-export const BELASTING_LAAG  = 0.3693;
-export const BELASTING_HOOG  = 0.495;
-export const BELASTING_GRENS = 73_031;
+export const BELASTING_LAAG  = 0.3748;   // Schijf 2 tarief 2026 (ook max. aftrekpercentage)
+export const BELASTING_HOOG  = 0.495;    // Schijf 3 tarief 2026
+export const BELASTING_GRENS = 76_817;   // Grens schijf 2/3 in 2026

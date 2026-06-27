@@ -1,9 +1,9 @@
-import { CheckCircle, XCircle, AlertTriangle, RotateCcw, ShieldCheck, Info } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, RotateCcw, ShieldCheck, TrendingUp, Lightbulb, ArrowRight } from 'lucide-react';
 import { useWizard } from '../../context/WizardContext';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../ui/Button';
 import { berekenResultaat } from '../../lib/berekening';
-import { TOETSRENTES } from '../../lib/normen';
+import { TOETSRENTES, NHG_GRENS_2026, STARTER_GRENS_2026 } from '../../lib/normen';
 import type { RentevastePeriode } from '../../types/wizard';
 
 function euro(n: number) {
@@ -41,7 +41,6 @@ export function Stap8Resultaat() {
   const { setTab } = useApp();
   if (!resultaat) return null;
 
-  // Scenario vergelijker — bereken snel voor andere periodes
   const scenarios = SCENARIO_PERIODES.map(p => {
     const r = berekenResultaat(situatie, inkomen1, inkomen2, verplichtingen, { ...woning, rentevastePeriode: p });
     return { periode: p, rente: TOETSRENTES[p]!, max: r.effectieveMaxHypotheek, maandlast: r.brutoMaandlast };
@@ -56,7 +55,12 @@ export function Stap8Resultaat() {
   } = resultaat;
 
   const koopsom = woning.koopsom ?? 0;
-  const pasWoning = koopsom > 0 && effectieveMaxHypotheek >= koopsom - (woning.eigenGeld ?? 0);
+  const eigenGeld = woning.eigenGeld ?? 0;
+  const pasWoning = koopsom > 0 && effectieveMaxHypotheek >= koopsom - eigenGeld;
+
+  // Tips voor consument om meer te lenen
+  const heeftVerplichtingen = (resultaat.maandlastenVerplichtingen ?? 0) > 0;
+  const heeftPartner = situatie.metPartner;
 
   return (
     <div className="space-y-5">
@@ -64,25 +68,32 @@ export function Stap8Resultaat() {
       {/* Hoofduitkomst */}
       <div className="bg-[#0D1F3C] text-white rounded-2xl p-6 text-center space-y-1">
         <p className="text-sm text-white/60">{adv ? 'Maximale hypotheek' : 'Jij kunt maximaal lenen'}</p>
-        <p className="text-4xl font-bold">{euro(effectieveMaxHypotheek)}</p>
+        <p className="text-4xl font-bold tracking-tight">{euro(effectieveMaxHypotheek)}</p>
         {energielabelBonus > 0 && (
           <p className="text-xs text-[#1ABC9C] mt-1">Inclusief {euro(energielabelBonus)} energielabel bonus</p>
+        )}
+        {!adv && (
+          <p className="text-xs text-white/50 mt-2">
+            Op basis van jouw inkomen van {euro(toetsinkomen)} per jaar · normen 2026
+          </p>
         )}
       </div>
 
       {/* Budget check */}
       {koopsom > 0 && (
-        <div className={`flex items-center gap-3 p-4 rounded-xl ${pasWoning ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800'}`}>
-          {pasWoning ? <CheckCircle className="w-6 h-6 shrink-0" /> : <XCircle className="w-6 h-6 shrink-0" />}
+        <div className={`flex items-center gap-3 p-4 rounded-xl ${pasWoning ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-800'}`}>
+          {pasWoning ? <CheckCircle className="w-6 h-6 shrink-0" /> : <AlertTriangle className="w-6 h-6 shrink-0" />}
           <div>
             <p className="font-semibold text-sm">
               {pasWoning
-                ? `De woning van ${euro(koopsom)} past binnen je budget`
-                : `De woning van ${euro(koopsom)} past (nog) niet`}
+                ? `Woning van ${euro(koopsom)} past binnen je budget`
+                : `${euro(koopsom)} gaat net boven je budget`}
             </p>
             {!pasWoning && eigenGeldTekort > 0 && (
               <p className="text-xs opacity-80 mt-0.5">
-                {adv ? `Tekort (incl. kosten koper): ${euro(eigenGeldTekort)}` : `Je hebt nog ca. ${euro(eigenGeldTekort)} extra nodig`}
+                {adv
+                  ? `Tekort (incl. kosten koper): ${euro(eigenGeldTekort)}`
+                  : `Je hebt nog ca. ${euro(eigenGeldTekort)} extra nodig — dit kan extra spaargeld zijn of een hogere hypotheek.`}
               </p>
             )}
           </div>
@@ -92,6 +103,9 @@ export function Stap8Resultaat() {
       {/* Maandlasten */}
       <div className="bg-white rounded-2xl border border-gray-100 p-5">
         <p className="text-sm font-semibold text-[#0D1F3C] mb-1">{adv ? 'Maandlasten' : 'Wat betaal je per maand?'}</p>
+        {!adv && (
+          <p className="text-xs text-gray-400 mb-3">Bij een hypotheek van {euro(effectieveMaxHypotheek)}</p>
+        )}
         <Rij
           label={adv ? 'Bruto maandlast' : 'Bruto maandbedrag'}
           waarde={euro(brutoMaandlast)}
@@ -99,10 +113,19 @@ export function Stap8Resultaat() {
           vet
         />
         <Rij
-          label={adv ? 'Netto maandlast (indicatief)' : 'Wat je netto betaalt (indicatief)'}
+          label={adv ? 'Netto maandlast (indicatief)' : 'Wat je netto betaalt'}
           waarde={euro(Math.max(0, nettoMaandlast))}
-          sub={adv ? 'Na hypotheekrenteaftrek, incl. eigenwoningforfait' : 'Na belastingvoordeel — dit is wat je echt kwijt bent'}
+          sub={adv
+            ? 'Na hypotheekrenteaftrek, incl. eigenwoningforfait'
+            : 'Na belastingvoordeel — dit is wat je écht elke maand kwijt bent'}
         />
+        {!adv && (
+          <div className="mt-3 p-3 bg-[#1ABC9C]/5 rounded-xl">
+            <p className="text-xs text-gray-500">
+              <span className="font-medium text-[#0D1F3C]">Wat betekent dit?</span> Je betaalt rente en lost af. De rente is deels aftrekbaar van de belasting, waardoor je netto minder betaalt dan het brutobedrag. Dit is een indicatie — de werkelijke maandlast hangt af van de actuele rente.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* NHG & Starter */}
@@ -110,23 +133,31 @@ export function Stap8Resultaat() {
         <Badge
           ok={nhgMogelijk}
           label={nhgMogelijk
-            ? (adv ? 'NHG van toepassing' : 'Je hebt recht op NHG')
+            ? (adv ? 'NHG van toepassing' : 'Goed nieuws: je hebt recht op NHG!')
             : (adv ? 'Geen NHG' : 'NHG is niet van toepassing')}
           sub={nhgMogelijk
-            ? (adv ? 'Premie: 0,6% van lening. Lagere rente, achtervang bij betalingsproblemen.' : 'Dit geeft je recht op een lagere rente en een vangnet als je de hypotheek niet meer kunt betalen.')
+            ? (adv
+                ? `Premie: 0,6% van lening (${euro(bijkomendeKosten.nhgPremie)}). Lagere rente, achtervang bij betalingsproblemen.`
+                : `NHG staat voor Nationale Hypotheek Garantie. Voordelen: je krijgt een lagere rente (meestal 0,3–0,6% korting) en er is een vangnet als je de hypotheek niet meer kunt betalen door ontslag of scheiding.`)
             : koopsom === 0
               ? 'Vul een koopsom in om de NHG-check te doen'
-              : (adv ? `Koopsom boven NHG-grens van €435.000` : `De woning is te duur voor NHG (grens: €435.000)`)}
+              : (adv
+                  ? `Koopsom boven NHG-grens van ${euro(NHG_GRENS_2026)}`
+                  : `De woning is te duur voor NHG. De grens in 2026 is ${euro(NHG_GRENS_2026)}.`)}
         />
         {situatie.isStarter && (
           <Badge
             ok={startersvrijstelling}
             label={startersvrijstelling
               ? (adv ? 'Startersvrijstelling van toepassing' : 'Je betaalt geen overdrachtsbelasting!')
-              : (adv ? 'Geen startersvrijstelling' : 'Je komt niet in aanmerking voor de startersvrijstelling')}
+              : (adv ? 'Geen startersvrijstelling' : 'Geen startersvrijstelling van toepassing')}
             sub={startersvrijstelling
-              ? `Dat scheelt je ${euro(koopsom * 0.02)} aan overdrachtsbelasting`
-              : adv ? 'Voldoet niet aan voorwaarden (leeftijd < 35, koopsom < €510.000)' : 'Voorwaarden: jonger dan 35 jaar en koopsom onder €510.000'}
+              ? (adv
+                  ? `Besparing: ${euro(koopsom * 0.02)} (2% van koopsom)`
+                  : `Dit scheelt je direct ${euro(koopsom * 0.02)}. Als starter betaal je 0% overdrachtsbelasting — dit is een cadeau van de overheid om het voor jou makkelijker te maken.`)
+              : (adv
+                  ? `Voldoet niet aan voorwaarden (leeftijd < 35, koopsom < ${euro(STARTER_GRENS_2026)})`
+                  : `Voorwaarden: jonger dan 35 jaar én koopsom onder ${euro(STARTER_GRENS_2026)}.`)}
           />
         )}
       </div>
@@ -134,32 +165,90 @@ export function Stap8Resultaat() {
       {/* Bijkomende kosten */}
       {koopsom > 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
-          <p className="text-sm font-semibold text-[#0D1F3C] mb-1">{adv ? 'Bijkomende kosten koper' : 'Wat komt er nog bij? (indicatief)'}</p>
+          <p className="text-sm font-semibold text-[#0D1F3C] mb-1">{adv ? 'Bijkomende kosten koper' : 'Wat komt er nog bij?'}</p>
+          {!adv && <p className="text-xs text-gray-400 mb-3">Dit zijn éénmalige kosten bovenop de koopsom</p>}
           <Rij label="Overdrachtsbelasting" waarde={euro(bijkomendeKosten.overdrachtsbelasting)} sub={startersvrijstelling ? '0% — startersvrijstelling' : '2% van koopsom'} />
-          <Rij label="Notariskosten" waarde="ca. €1.500 – €3.000" />
-          <Rij label="Taxatiekosten" waarde="ca. €500 – €900" />
-          <Rij label={adv ? 'Advies- en bemiddelingskosten' : 'Hypotheekadviseur'} waarde="ca. €2.500 – €4.000" />
-          {nhgMogelijk && <Rij label="NHG-premie" waarde={euro(bijkomendeKosten.nhgPremie)} sub="Fiscaal aftrekbaar" />}
-          <Rij label="Totaal" waarde={`ca. ${euro(bijkomendeKosten.totaal)}`} vet />
+          <Rij label="Notariskosten" waarde="ca. €1.500 – €3.000" sub={adv ? undefined : 'Leveringsakte + hypotheekakte'} />
+          <Rij label="Taxatiekosten" waarde="ca. €500 – €900" sub={adv ? undefined : 'Verplicht voor hypotheekaanvraag'} />
+          <Rij label={adv ? 'Advies- en bemiddelingskosten' : 'Hypotheekadviseur'} waarde="ca. €2.500 – €4.000" sub={adv ? undefined : 'Onafhankelijk advies is het waard'} />
+          {nhgMogelijk && <Rij label="NHG-premie" waarde={euro(bijkomendeKosten.nhgPremie)} sub="Fiscaal aftrekbaar in jaar 1" />}
+          <Rij label="Totaal bijkomende kosten" waarde={`ca. ${euro(bijkomendeKosten.totaal)}`} vet />
+          {!adv && (
+            <div className="mt-3 p-3 bg-amber-50 rounded-xl">
+              <p className="text-xs text-amber-800">
+                <span className="font-medium">Let op:</span> Deze kosten kun je niet meefinancieren in je hypotheek — dit heb je echt als spaargeld nodig. Zorg dat je minimaal {euro(bijkomendeKosten.totaal)} achter de hand hebt.
+              </p>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Technische details — adviseur open, consument ingeklapt */}
+      {/* Tips voor consument */}
+      {!adv && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <Lightbulb className="w-4 h-4 text-[#1ABC9C]" />
+            <p className="text-sm font-semibold text-[#0D1F3C]">Wil je meer lenen?</p>
+          </div>
+          <div className="space-y-2.5">
+            {heeftVerplichtingen && (
+              <div className="flex gap-2.5 items-start">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#1ABC9C] mt-1.5 shrink-0" />
+                <p className="text-xs text-gray-600">
+                  <span className="font-medium text-[#0D1F3C]">Lossen leningen af.</span> Je hebt lopende verplichtingen van {euro(maandlastenVerplichtingen)}/mnd die je maximale hypotheek verlagen. Aflossen vóór de aanvraag kan helpen.
+                </p>
+              </div>
+            )}
+            {!heeftPartner && (
+              <div className="flex gap-2.5 items-start">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#1ABC9C] mt-1.5 shrink-0" />
+                <p className="text-xs text-gray-600">
+                  <span className="font-medium text-[#0D1F3C]">Met een partner leen je meer.</span> Bij twee inkomens wordt het tweede inkomen voor een groot deel meegenomen.
+                </p>
+              </div>
+            )}
+            <div className="flex gap-2.5 items-start">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#1ABC9C] mt-1.5 shrink-0" />
+              <p className="text-xs text-gray-600">
+                <span className="font-medium text-[#0D1F3C]">Kies een energiezuinige woning.</span> Bij label A++ of hoger mag je tot €40.000 extra lenen bovenop het normale maximum.
+              </p>
+            </div>
+            <div className="flex gap-2.5 items-start">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#1ABC9C] mt-1.5 shrink-0" />
+              <p className="text-xs text-gray-600">
+                <span className="font-medium text-[#0D1F3C]">Salaris verwacht te stijgen?</span> Sommige geldverstrekkers nemen een toekomstig hoger inkomen mee bij een vaste aanstelling of stijgende schaal.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Technische details */}
       <details open={adv} className="bg-gray-50 rounded-2xl p-5 cursor-pointer">
         <summary className="text-sm font-medium text-[#0D1F3C] select-none">
-          {adv ? 'Berekeningsdetails' : 'Hoe is dit berekend?'}
+          {adv ? 'Berekeningsdetails' : 'Hoe is dit berekend? (klik voor uitleg)'}
         </summary>
         <div className="mt-3">
-          <Rij label={adv ? 'Toetsinkomen' : 'Jouw toetsinkomen'} waarde={euro(toetsinkomen)} />
-          <Rij label={adv ? 'Maandlasten verplichtingen' : 'Maandelijkse lasten'} waarde={`${euro(maandlastenVerplichtingen)}/mnd`} />
-          <Rij label={adv ? 'Max op basis van inkomen' : 'Max op basis van wat je verdient'} waarde={euro(maxHypotheekOpInkomen)} />
-          {koopsom > 0 && <Rij label={adv ? 'Max op basis van woning (100% LTV)' : 'Max op basis van de woning'} waarde={euro(maxHypotheekOpWoning)} />}
+          <Rij label={adv ? 'Toetsinkomen' : 'Jouw toetsinkomen'} waarde={euro(toetsinkomen)} sub={adv ? undefined : 'Bruto jaarsalaris inclusief vakantiegeld, bonus etc.'} />
+          {maandlastenVerplichtingen > 0 && (
+            <Rij label={adv ? 'Maandlasten verplichtingen' : 'Bestaande maandlasten'} waarde={`${euro(maandlastenVerplichtingen)}/mnd`} sub={adv ? undefined : 'Leningen, lease etc. — verlagen je maximum'} />
+          )}
+          <Rij label={adv ? 'Max op basis van inkomen' : 'Max op basis van wat je verdient'} waarde={euro(maxHypotheekOpInkomen)} sub={adv ? undefined : 'Nibud LTI-norm 2026'} />
+          {koopsom > 0 && <Rij label={adv ? 'Max op basis van woning (100% LTV)' : 'Max op basis van de woning'} waarde={euro(maxHypotheekOpWoning)} sub={adv ? undefined : 'Maximaal 100% van de woningwaarde'} />}
         </div>
       </details>
 
       {/* Scenario vergelijker */}
       <div className="bg-white rounded-2xl border border-gray-100 p-5">
-        <p className="text-sm font-semibold text-[#0D1F3C] mb-3">Vergelijk rentevaste periodes</p>
+        <div className="flex items-center gap-2 mb-3">
+          <TrendingUp className="w-4 h-4 text-[#1ABC9C]" />
+          <p className="text-sm font-semibold text-[#0D1F3C]">
+            {adv ? 'Vergelijk rentevaste periodes' : 'Kies je rentevaste periode'}
+          </p>
+        </div>
+        {!adv && (
+          <p className="text-xs text-gray-400 mb-3">Hoe langer je rente vastzet, hoe zekerder — maar ook hoe hoger de rente</p>
+        )}
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -188,7 +277,9 @@ export function Stap8Resultaat() {
           </table>
         </div>
         <p className="text-[10px] text-gray-400 mt-3">
-          Hogere rente bij langere periode = meer zekerheid, lagere max hypotheek. Korte periode: AFM toetsrente 5% van toepassing.
+          {adv
+            ? 'Hogere rente bij langere periode = meer zekerheid, lagere max hypotheek. Korte periode: AFM toetsrente 5% van toepassing.'
+            : 'Let op: dit zijn toetsrentes. De werkelijke rente die je betaalt kan lager zijn — vergelijk altijd meerdere aanbieders.'}
         </p>
       </div>
 
@@ -197,7 +288,7 @@ export function Stap8Resultaat() {
         {[
           { label: 'Nibud 2026',  sub: 'LTI-normtabel' },
           { label: 'AFM conform', sub: 'Toetsrente regels' },
-          { label: 'NHG 2026',    sub: 'Grens €435.000' },
+          { label: 'NHG 2026',   sub: `Grens ${euro(NHG_GRENS_2026)}` },
         ].map(b => (
           <div key={b.label} className="bg-gray-50 rounded-xl p-3 text-center">
             <ShieldCheck className="w-4 h-4 text-[#1ABC9C] mx-auto mb-1" />
@@ -214,20 +305,28 @@ export function Stap8Resultaat() {
           <p className="text-sm">
             {adv
               ? 'Er is een BKR-melding opgegeven. Dit kan de hypotheekaanvraag bemoeilijken. Bespreek dit met de klant.'
-              : 'Je hebt een BKR-melding aangegeven. Dit kan het moeilijker maken om een hypotheek te krijgen. Bespreek dit met een adviseur.'}
+              : 'Je hebt een BKR-melding. Dit kan het moeilijker maken om een hypotheek te krijgen. Niet het einde van de wereld — bespreek dit eerlijk met een adviseur.'}
           </p>
         </div>
       )}
 
       <div className="pt-2 space-y-3">
         <Button onClick={() => setTab('woningen')} className="w-full">
-          Woningen checken met dit budget →
+          {adv ? 'Woningen checken →' : 'Bekijk woningen binnen dit budget →'}
         </Button>
         <Button variant="outline" onClick={() => setStap(1)} className="w-full">
           <RotateCcw className="w-4 h-4" /> Nieuwe berekening
         </Button>
+        {!adv && (
+          <div className="flex gap-2 p-4 bg-[#0D1F3C]/5 rounded-xl items-start">
+            <ArrowRight className="w-4 h-4 text-[#1ABC9C] shrink-0 mt-0.5" />
+            <p className="text-xs text-gray-500">
+              <span className="font-medium text-[#0D1F3C]">Volgende stap:</span> Sla je berekening op via je profiel en deel hem met een hypotheekadviseur. Deze berekening is een indicatie — een adviseur kan precies uitzoeken wat in jouw situatie mogelijk is.
+            </p>
+          </div>
+        )}
         <p className="text-xs text-gray-400 text-center">
-          Dit is een indicatieve berekening. Neem voor een officieel advies contact op met een hypotheekadviseur.
+          Indicatieve berekening op basis van Nibud 2026 normen. Geen rechten aan te ontlenen.
         </p>
       </div>
     </div>
