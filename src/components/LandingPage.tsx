@@ -53,7 +53,16 @@ export function LandingPage({ onLogin }: Props) {
     try {
       if (isLogin) {
         const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: wachtwoord });
-        if (error) { setFout('Verkeerd e-mailadres of wachtwoord.'); return; }
+        if (error) {
+          if (error.message.includes('Email not confirmed')) {
+            setFout('Bevestig eerst je e-mailadres via de mail die we hebben gestuurd.');
+          } else if (error.message.includes('Invalid login credentials')) {
+            setFout('Verkeerd e-mailadres of wachtwoord.');
+          } else {
+            setFout(error.message);
+          }
+          return;
+        }
         onLogin({
           naam: data.user.user_metadata?.naam ?? email.split('@')[0],
           email: data.user.email!,
@@ -66,10 +75,12 @@ export function LandingPage({ onLogin }: Props) {
           options: { data: { naam: naam.trim() } },
         });
         if (error) { setFout(error.message); return; }
-        if (data.user) {
-          onLogin({ naam: naam.trim(), email: data.user.email!, aangemaakt: new Date().toLocaleDateString('nl-NL') });
+        if (data.session) {
+          // Email confirmation uitgeschakeld — direct inloggen
+          onLogin({ naam: naam.trim(), email: data.user!.email!, aangemaakt: new Date().toLocaleDateString('nl-NL') });
         } else {
-          setFout('Check je e-mail om je account te bevestigen.');
+          // Email confirmation ingeschakeld — wacht op bevestiging
+          setFout('Check je e-mail om je account te bevestigen en klik op de link.');
         }
       }
     } finally {
