@@ -7,39 +7,37 @@ import { TOETSRENTES } from '../../lib/normen';
 const energielabels: Energielabel[] = ['A++++','A+++','A++','A+','A','B','C','D','E','F','G'];
 
 export function Stap6Woning() {
-  const { woning, updateWoning, volgende, vorige } = useWizard();
-  const isValid = (woning.koopsom ?? 0) > 0;
+  const { woning, updateWoning, volgende, vorige, rol } = useWizard();
+  const adv = rol === 'adviseur';
 
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-2xl font-bold text-[#0D1F3C]">De woning</h2>
-        <p className="text-gray-400 mt-1 text-sm">Vul de gegevens van de gewenste woning in.</p>
+        <h2 className="text-2xl font-bold text-[#0D1F3C]">
+          {adv ? 'De woning' : 'Heb je al een woning op het oog?'}
+        </h2>
+        <p className="text-gray-400 mt-1 text-sm">
+          {adv ? 'Vul de woninggegevens in.' : 'Optioneel — je kunt dit ook overslaan.'}
+        </p>
       </div>
 
       <FormField
-        label="Koopsom / vraagprijs"
-        tooltip="De aankoopprijs van de woning"
+        label={adv ? 'Koopsom / vraagprijs' : 'Vraagprijs woning (optioneel)'}
+        tooltip="Voor NHG-check en startersvrijstelling"
         type="number" min={0} prefix="€" placeholder="0"
         value={woning.koopsom ?? ''}
         onChange={e => updateWoning({ koopsom: Number(e.target.value) })}
       />
 
-      <FormField
-        label="In te brengen eigen geld"
-        tooltip="Spaargeld, schenking of overwaarde vorige woning"
-        type="number" min={0} prefix="€" placeholder="0"
-        value={woning.eigenGeld ?? ''}
-        onChange={e => updateWoning({ eigenGeld: Number(e.target.value) })}
-      />
-
-      <SelectField
-        label="Energielabel woning"
-        tooltip="A++ of hoger geeft recht op extra leenruimte"
-        options={energielabels.map(l => ({ value: l, label: l }))}
-        value={woning.energielabel ?? 'C'}
-        onChange={e => updateWoning({ energielabel: e.target.value as Energielabel })}
-      />
+      {adv && (
+        <FormField
+          label="In te brengen eigen geld"
+          tooltip="Spaargeld, schenking of overwaarde vorige woning"
+          type="number" min={0} prefix="€" placeholder="0"
+          value={woning.eigenGeld ?? ''}
+          onChange={e => updateWoning({ eigenGeld: Number(e.target.value) })}
+        />
+      )}
 
       <div className="space-y-2">
         <p className="text-sm font-medium text-[#0D1F3C]">Rentevaste periode</p>
@@ -62,44 +60,56 @@ export function Stap6Woning() {
         </div>
       </div>
 
-      <div className="space-y-2">
-        <p className="text-sm font-medium text-[#0D1F3C]">Hypotheekvorm</p>
-        <div className="space-y-2">
-          {([
-            ['annuitair',    'Annuïtair',    'Gelijke maandlasten, verhouding rente/aflossing verschuift (verplicht voor NHG)'],
-            ['lineair',      'Lineair',      'Afnemende maandlasten, hogere aflossing per maand'],
-            ['aflossingsvrij','Aflossingsvrij','Alleen rente betalen (max 50% van woningwaarde, niet voor NHG)'],
-          ] as [Hypotheekvorm, string, string][]).map(([val, lbl, desc]) => (
-            <button
-              key={val}
-              type="button"
-              onClick={() => updateWoning({ hypotheekvorm: val })}
-              className={`w-full p-3.5 rounded-xl border-2 text-left transition cursor-pointer
-                ${(woning.hypotheekvorm ?? 'annuitair') === val
-                  ? 'border-[#1ABC9C] bg-[#1ABC9C]/5'
-                  : 'border-gray-200 hover:border-gray-300'}`}
-            >
-              <p className={`text-sm font-medium ${(woning.hypotheekvorm ?? 'annuitair') === val ? 'text-[#0D1F3C]' : 'text-gray-500'}`}>{lbl}</p>
-              <p className="text-xs text-gray-400 mt-0.5">{desc}</p>
-            </button>
-          ))}
-        </div>
-      </div>
+      {adv && (
+        <>
+          <SelectField
+            label="Energielabel woning"
+            tooltip="A++ of hoger geeft recht op extra leenruimte"
+            options={energielabels.map(l => ({ value: l, label: l }))}
+            value={woning.energielabel ?? 'C'}
+            onChange={e => updateWoning({ energielabel: e.target.value as Energielabel })}
+          />
 
-      <SelectField
-        label="Looptijd"
-        options={[
-          { value: 20, label: '20 jaar' },
-          { value: 25, label: '25 jaar' },
-          { value: 30, label: '30 jaar (standaard)' },
-        ]}
-        value={woning.looptijdJaar ?? 30}
-        onChange={e => updateWoning({ looptijdJaar: Number(e.target.value) })}
-      />
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-[#0D1F3C]">Hypotheekvorm</p>
+            <div className="space-y-2">
+              {([
+                ['annuitair',     'Annuïtair',      'Gelijke maandlasten (verplicht voor NHG)'],
+                ['lineair',       'Lineair',         'Afnemende maandlasten'],
+                ['aflossingsvrij','Aflossingsvrij',  'Alleen rente — max 50% woningwaarde'],
+              ] as [Hypotheekvorm, string, string][]).map(([val, lbl, desc]) => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => updateWoning({ hypotheekvorm: val })}
+                  className={`w-full p-3.5 rounded-xl border-2 text-left transition cursor-pointer
+                    ${(woning.hypotheekvorm ?? 'annuitair') === val
+                      ? 'border-[#1ABC9C] bg-[#1ABC9C]/5'
+                      : 'border-gray-200 hover:border-gray-300'}`}
+                >
+                  <p className={`text-sm font-medium ${(woning.hypotheekvorm ?? 'annuitair') === val ? 'text-[#0D1F3C]' : 'text-gray-500'}`}>{lbl}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{desc}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <SelectField
+            label="Looptijd"
+            options={[
+              { value: 20, label: '20 jaar' },
+              { value: 25, label: '25 jaar' },
+              { value: 30, label: '30 jaar (standaard)' },
+            ]}
+            value={woning.looptijdJaar ?? 30}
+            onChange={e => updateWoning({ looptijdJaar: Number(e.target.value) })}
+          />
+        </>
+      )}
 
       <div className="flex gap-3 pt-2">
         <Button variant="ghost" onClick={vorige}>← Terug</Button>
-        <Button onClick={volgende} disabled={!isValid} className="flex-1">Bereken →</Button>
+        <Button onClick={volgende} className="flex-1">Bereken →</Button>
       </div>
     </div>
   );
