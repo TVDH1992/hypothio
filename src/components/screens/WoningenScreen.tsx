@@ -143,6 +143,7 @@ export function WoningenScreen() {
       adres: parsed.adres,
       stad: parsed.stad,
       vraagprijs: prijs,
+      marktwaarde: fundaGevonden ? Number(fundaPrijs) : undefined,
       toegevoegd: new Date().toLocaleDateString('nl-NL'),
     });
     setWoningen(laadWoningen());
@@ -374,6 +375,20 @@ export function WoningenScreen() {
                         </span>
                       )}
                     </div>
+                    {w.marktwaarde && (() => {
+                      const adv = biedadvies(w.vraagprijs, w.marktwaarde);
+                      const besteBod = w.vraagprijs > w.marktwaarde ? w.marktwaarde : w.vraagprijs;
+                      const kleur = { groen: 'emerald', oranje: 'amber', rood: 'red' }[adv.kleur];
+                      return (
+                        <div className="ml-6 mt-2 space-y-1">
+                          <p className="text-xs text-gray-400">Marktwaarde: <span className="font-medium text-[#0D1F3C]">{euro(w.marktwaarde)}</span></p>
+                          <div className={`inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-lg bg-${kleur}-50 text-${kleur}-700 font-medium`}>
+                            <Gavel className="w-3 h-3" />
+                            {adv.label} · Beste bod: ~{euro(besteBod)}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <a href={w.fundaUrl} target="_blank" rel="noopener noreferrer"

@@ -6,6 +6,7 @@ export interface GeslaagdeWoning {
   adres: string;
   stad: string;
   vraagprijs: number;
+  marktwaarde?: number;
   toegevoegd: string;
 }
 
