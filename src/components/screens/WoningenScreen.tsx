@@ -245,16 +245,21 @@ export function WoningenScreen() {
     <div className="space-y-6 pb-4">
 
       {/* WOZ Analyser */}
-      <div>
-        <h2 className="text-xl font-bold text-[#0D1F3C] mb-1">Woning analyseren</h2>
-        <p className="text-sm text-gray-400 mb-4">Zoek een adres op en zie de WOZ-waarde, geschatte marktwaarde en biedadvies.</p>
+      <div className="bg-white rounded-2xl border border-gray-100 p-4">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-7 h-7 bg-[#99248F]/8 rounded-lg flex items-center justify-center">
+            <Search className="w-3.5 h-3.5 text-[#99248F]" />
+          </div>
+          <h2 className="text-base font-bold text-[#0D1F3C]">Woning analyseren</h2>
+        </div>
+        <p className="text-xs text-gray-400 mb-4 ml-9">WOZ-waarde, marktwaarde en biedadvies op elk adres.</p>
 
         {/* Zoekbalk */}
         <div className="relative">
           <div className="relative flex items-center">
             <Search className="absolute left-3 w-4 h-4 text-gray-400 pointer-events-none" />
             <input
-              className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 text-[#0D1F3C] bg-white focus:outline-none focus:ring-2 focus:ring-[#99248F] focus:border-transparent transition placeholder:text-gray-300 text-sm"
+              className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 text-[#0D1F3C] bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#99248F] focus:border-transparent transition placeholder:text-gray-300 text-sm"
               placeholder="bijv. Dorpsstraat 1 Amsterdam"
               value={zoekterm}
               onChange={e => { setZoekterm(e.target.value); setGeselecteerd(null); setWozAnalyse(null); }}
@@ -372,19 +377,31 @@ export function WoningenScreen() {
         )}
       </div>
 
-      <div className="border-t border-gray-100" />
-
       {/* Opgeslagen woningen */}
       <div>
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-xl font-bold text-[#0D1F3C]">Opgeslagen woningen</h2>
-            {maxHypotheek > 0 && (
-              <p className="text-xs text-gray-400 mt-0.5">Budget: {euro(maxHypotheek)}</p>
+        {/* Budget banner */}
+        {maxHypotheek > 0 ? (
+          <div className="bg-[#0D1F3C] rounded-2xl p-4 mb-4 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] text-white/40 uppercase tracking-widest">Jouw budget</p>
+              <p className="text-2xl font-bold text-white mt-0.5">{euro(maxHypotheek)}</p>
+            </div>
+            {woningen.length > 0 && (
+              <div className="text-right">
+                <p className="text-[10px] text-white/40">Binnen budget</p>
+                <p className="text-xl font-bold text-white mt-0.5">
+                  {woningen.filter(w => w.vraagprijs <= maxHypotheek).length}
+                  <span className="text-sm text-white/40 font-normal"> / {woningen.length}</span>
+                </p>
+              </div>
             )}
           </div>
+        ) : null}
+
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-bold text-[#0D1F3C]">Opgeslagen woningen</h2>
           <button type="button" onClick={() => setToonFundaForm(v => !v)}
-            className="flex items-center gap-1.5 text-xs text-[#99248F] font-medium hover:opacity-75 transition cursor-pointer">
+            className="flex items-center gap-1.5 text-xs bg-[#99248F] text-white font-medium px-3 py-1.5 rounded-lg hover:opacity-80 transition cursor-pointer">
             <Plus className="w-3.5 h-3.5" /> Toevoegen
           </button>
         </div>
@@ -580,67 +597,93 @@ export function WoningenScreen() {
         )}
 
         {woningen.length === 0 && !toonFundaForm && (
-          <div className="text-center py-10 text-gray-400">
-            <TrendingUp className="w-8 h-8 mx-auto mb-2 opacity-30" />
-            <p className="text-sm">Nog geen woningen opgeslagen.</p>
-            <p className="text-xs mt-1">Voeg een Funda link toe om bij te houden of een woning past.</p>
-          </div>
+          <button type="button" onClick={() => setToonFundaForm(true)}
+            className="w-full border-2 border-dashed border-gray-200 rounded-2xl p-8 flex flex-col items-center gap-3 hover:border-[#99248F]/40 transition cursor-pointer group">
+            <div className="w-12 h-12 bg-gray-50 group-hover:bg-[#99248F]/8 rounded-xl flex items-center justify-center transition">
+              <Plus className="w-6 h-6 text-gray-300 group-hover:text-[#99248F] transition" />
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-medium text-[#0D1F3C]">Eerste woning toevoegen</p>
+              <p className="text-xs text-gray-400 mt-0.5">Plak een Funda link en check direct of het past</p>
+            </div>
+          </button>
         )}
 
         <div className="space-y-3">
           {woningen.map(w => {
             const past = maxHypotheek > 0 && w.vraagprijs <= maxHypotheek;
             const verschil = maxHypotheek > 0 ? Math.abs(w.vraagprijs - maxHypotheek) : 0;
+            const budgetPct = maxHypotheek > 0 ? Math.min(100, (w.vraagprijs / maxHypotheek) * 100) : 0;
             return (
-              <div key={w.id} className="bg-white rounded-2xl border border-gray-100 p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      {maxHypotheek > 0 && (past
-                        ? <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-                        : <XCircle className="w-4 h-4 text-red-400 shrink-0" />
-                      )}
-                      <p className="text-sm font-semibold text-[#0D1F3C] truncate">{w.adres}</p>
-                    </div>
-                    <p className="text-xs text-gray-400 ml-6">{w.stad} · {w.toegevoegd}</p>
-                    <div className="ml-6 mt-2 flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-semibold text-[#0D1F3C]">{euro(w.vraagprijs)}</span>
+              <div key={w.id} className={`bg-white rounded-2xl border overflow-hidden ${past ? 'border-emerald-100' : 'border-red-100'}`}>
+                {/* Gekleurde topbalk */}
+                <div className={`h-1 w-full ${past ? 'bg-emerald-400' : 'bg-red-400'}`} />
+
+                <div className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        {maxHypotheek > 0 && (past
+                          ? <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
+                          : <XCircle className="w-4 h-4 text-red-400 shrink-0" />
+                        )}
+                        <p className="text-sm font-bold text-[#0D1F3C] truncate">{w.adres}</p>
+                      </div>
+                      <p className="text-xs text-gray-400 ml-6">{w.stad} · {w.toegevoegd}</p>
+
+                      {/* Prijs + badge */}
+                      <div className="ml-6 mt-2.5 flex items-center gap-2 flex-wrap">
+                        <span className="text-lg font-bold text-[#0D1F3C]">{euro(w.vraagprijs)}</span>
+                        {maxHypotheek > 0 && (
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${past ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                            {past ? `${euro(verschil)} onder budget` : `${euro(verschil)} boven budget`}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Budget-balk */}
                       {maxHypotheek > 0 && (
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${past ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                          {past ? `${euro(verschil)} onder budget` : `${euro(verschil)} boven budget`}
-                        </span>
-                      )}
-                    </div>
-                    {w.marktwaarde && (() => {
-                      const adv = biedadvies(w.vraagprijs, w.marktwaarde);
-                      const besteBod = w.vraagprijs > w.marktwaarde ? w.marktwaarde : w.vraagprijs;
-                      const kleur = { groen: 'emerald', oranje: 'amber', rood: 'red' }[adv.kleur];
-                      return (
-                        <div className="ml-6 mt-2 space-y-1">
-                          <p className="text-xs text-gray-400">Marktwaarde: <span className="font-medium text-[#0D1F3C]">{euro(w.marktwaarde)}</span></p>
-                          <div className={`inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-lg bg-${kleur}-50 text-${kleur}-700 font-medium`}>
-                            <Gavel className="w-3 h-3" />
-                            {adv.label} · Beste bod: ~{euro(besteBod)}
+                        <div className="ml-6 mt-2">
+                          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all ${past ? 'bg-emerald-400' : 'bg-red-400'}`}
+                              style={{ width: `${budgetPct}%` }}
+                            />
                           </div>
+                          <p className="text-[10px] text-gray-400 mt-0.5">{budgetPct.toFixed(0)}% van jouw budget</p>
                         </div>
-                      );
-                    })()}
+                      )}
+
+                      {w.marktwaarde && (() => {
+                        const adv = biedadvies(w.vraagprijs, w.marktwaarde);
+                        const besteBod = w.vraagprijs > w.marktwaarde ? w.marktwaarde : w.vraagprijs;
+                        const kleur = { groen: 'emerald', oranje: 'amber', rood: 'red' }[adv.kleur];
+                        return (
+                          <div className="ml-6 mt-2 space-y-1">
+                            <p className="text-xs text-gray-400">Marktwaarde: <span className="font-semibold text-[#0D1F3C]">{euro(w.marktwaarde)}</span></p>
+                            <div className={`inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-lg bg-${kleur}-50 text-${kleur}-700 font-medium`}>
+                              <Gavel className="w-3 h-3" />
+                              {adv.label} · Beste bod: ~{euro(besteBod)}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <a href={w.fundaUrl} target="_blank" rel="noopener noreferrer"
+                        className="p-1.5 text-gray-400 hover:text-[#0D1F3C] transition">
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                      <button type="button" onClick={() => verwijder(w.id)}
+                        className="p-1.5 text-gray-400 hover:text-red-500 transition cursor-pointer">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <a href={w.fundaUrl} target="_blank" rel="noopener noreferrer"
-                      className="p-1.5 text-gray-400 hover:text-[#0D1F3C] transition">
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                    <button type="button" onClick={() => verwijder(w.id)}
-                      className="p-1.5 text-gray-400 hover:text-red-500 transition cursor-pointer">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
 
                 {/* Gecachede analyse */}
                 {w.analyseData?.fundaAnalyse && (
-                  <div className="mt-3 pt-3 border-t border-gray-50">
+                  <div className="mt-3 pt-3 border-t border-gray-100">
                     <button type="button"
                       onClick={() => setUitgebreid(prev => ({ ...prev, [w.id]: !prev[w.id] }))}
                       className="text-xs text-[#99248F] hover:opacity-75 transition cursor-pointer flex items-center gap-1">
@@ -703,6 +746,7 @@ export function WoningenScreen() {
                     )}
                   </div>
                 )}
+                </div>{/* einde p-4 */}
               </div>
             );
           })}

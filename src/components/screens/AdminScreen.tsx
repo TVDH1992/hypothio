@@ -257,13 +257,22 @@ interface Release {
 
 const RELEASES: Release[] = [
   {
-    versie: '1.2',
-    datum: '29 jun 2026',
+    versie: '1.3',
+    datum: '30 jun 2026',
     label: 'Huidige versie',
     items: [
-      { tekst: 'Schuldverloop grafiek: annuïtair vs lineair op resultatenpagina', nieuw: true },
-      { tekst: 'Code splitting via React.lazy — hoofdbundle 25% kleiner', nieuw: true },
-      { tekst: 'Admin: scenario\'s tellen per gebruiker in logboek', nieuw: true },
+      { tekst: 'Dashboard als aparte tab — landing + volledig dashboard in één scherm', nieuw: true },
+      { tekst: 'Dashboard upgrade: gradiënt hero, initialen avatar, status-badges, uitklapbare bijkomende kosten', nieuw: true },
+      { tekst: 'Woningen: budget-banner, gekleurde topbalk per kaart, visuele budget-balk, betere lege staat', nieuw: true },
+    ],
+  },
+  {
+    versie: '1.2',
+    datum: '29 jun 2026',
+    items: [
+      { tekst: 'Schuldverloop grafiek: annuïtair vs lineair op resultatenpagina' },
+      { tekst: 'Code splitting via React.lazy — hoofdbundle 25% kleiner' },
+      { tekst: 'Admin: scenario\'s tellen per gebruiker in logboek' },
     ],
   },
   {
