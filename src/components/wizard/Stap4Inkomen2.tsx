@@ -1,18 +1,29 @@
-﻿import { useState, useRef } from 'react';
+﻿import { useState, useRef, useMemo } from 'react';
 import { Upload, CheckCircle, Loader2 } from 'lucide-react';
 import { useWizard } from '../../context/WizardContext';
 import { Button } from '../ui/Button';
 import { FormField, Toggle } from '../ui/FormField';
+import { berekenResultaat } from '../../lib/berekening';
 
 type UploadStatus = 'idle' | 'laden' | 'succes' | 'fout';
 
 export function Stap4Inkomen2() {
-  const { inkomen2, updateInkomen2, rol, volgende, vorige } = useWizard();
+  const { inkomen2, updateInkomen2, rol, volgende, vorige, actueleRentes, actueleNormen } = useWizard();
   const [toonExtra, setToonExtra] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
   const fileRef = useRef<HTMLInputElement>(null);
   const isValid = (inkomen2.brutoSalaris ?? 0) > 0;
   const adv = rol === 'adviseur';
+
+  const partnerMax = useMemo(() => {
+    if (!inkomen2.brutoSalaris) return 0;
+    const res = berekenResultaat({}, inkomen2, {}, {}, {}, actueleRentes, actueleNormen);
+    return res.maxHypotheekOpInkomen;
+  }, [inkomen2, actueleRentes, actueleNormen]);
+
+  function euro(n: number) {
+    return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
+  }
 
   async function verwerkBestand(file: File) {
     setUploadStatus('laden');
@@ -100,6 +111,13 @@ export function Stap4Inkomen2() {
         value={inkomen2.brutoSalaris ?? ''}
         onChange={e => updateInkomen2({ brutoSalaris: Number(e.target.value) })}
       />
+
+      {partnerMax > 0 && (
+        <div className="flex items-center justify-between bg-[#0D1F3C]/5 rounded-xl px-4 py-3">
+          <p className="text-xs text-gray-500">{adv ? 'Max op basis van inkomen aanvrager 2 alleen' : 'Partner zou zelf kunnen lenen'}</p>
+          <p className="text-sm font-bold text-[#0D1F3C]">{euro(partnerMax)}</p>
+        </div>
+      )}
 
       <div className="space-y-2">
         <Toggle
