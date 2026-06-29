@@ -3,7 +3,7 @@ import type { SituatieData, InkomenData, VerplichtingenData, WoningData, Resulta
 import type { Sessie, WizardInvoer } from '../types/profiel';
 import { haalActueleRentes, haalActueleNormen, type RenteTabel } from '../lib/rentes';
 import { TOETSRENTES, LTI_NORMEN, type LtiRij } from '../lib/normen';
-import { laadProfiel } from '../lib/profiel';
+import { laadProfiel, slaProfielOp } from '../lib/profiel';
 
 export type Rol = 'consument' | 'adviseur';
 
@@ -64,6 +64,19 @@ export function WizardProvider({ children, sessie }: { children: ReactNode; sess
   const [rol, setRol]                       = useState<Rol>('consument');
   const [actueleRentes, setActueleRentes]   = useState<RenteTabel>(TOETSRENTES);
   const [actueleNormen, setActueleNormen]   = useState<LtiRij[]>(LTI_NORMEN);
+
+  // Auto-opslaan zodra resultaat berekend is
+  useEffect(() => {
+    if (!resultaat) return;
+    slaProfielOp({
+      id: '',
+      naam: sessie.naam,
+      aangemaakt: new Date().toLocaleDateString('nl-NL'),
+      maxHypotheek: resultaat.effectieveMaxHypotheek,
+      resultaat,
+      wizardInvoer: { situatie, inkomen1, inkomen2, verplichtingen, woning },
+    }).catch(() => {});
+  }, [resultaat]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     haalActueleRentes().then(setActueleRentes).catch(() => {});
