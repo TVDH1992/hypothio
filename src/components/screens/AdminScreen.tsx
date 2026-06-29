@@ -257,14 +257,32 @@ interface Release {
 
 const RELEASES: Release[] = [
   {
-    versie: '1.0',
+    versie: '1.2',
     datum: '29 jun 2026',
     label: 'Huidige versie',
     items: [
-      { tekst: 'Wizard state + loonstrook resultaat gecacht in Supabase', nieuw: true },
-      { tekst: 'Funda AI-analyse gecacht per woning — geen dubbele API-calls', nieuw: true },
-      { tekst: 'Analyse terug te zien op opgeslagen woningkaartjes', nieuw: true },
-      { tekst: 'Admin changelog / versie-overzicht', nieuw: true },
+      { tekst: 'Schuldverloop grafiek: annuïtair vs lineair op resultatenpagina', nieuw: true },
+      { tekst: 'Code splitting via React.lazy — hoofdbundle 25% kleiner', nieuw: true },
+      { tekst: 'Admin: scenario\'s tellen per gebruiker in logboek', nieuw: true },
+    ],
+  },
+  {
+    versie: '1.1',
+    datum: '29 jun 2026',
+    items: [
+      { tekst: 'PDF rapport: gestylde samenvatting in nieuwe tab, direct printbaar' },
+      { tekst: 'Scenario\'s opslaan/laden (max 5 per gebruiker)' },
+      { tekst: 'Partner hypotheek indicatie: live preview op basis van partner salaris' },
+      { tekst: 'Admin versie-changelog met tijdlijn en roadmap' },
+    ],
+  },
+  {
+    versie: '1.0',
+    datum: '29 jun 2026',
+    items: [
+      { tekst: 'Wizard state + loonstrook resultaat gecacht in Supabase' },
+      { tekst: 'Funda AI-analyse gecacht per woning — geen dubbele API-calls' },
+      { tekst: 'Analyse terug te zien op opgeslagen woningkaartjes' },
     ],
   },
   {
