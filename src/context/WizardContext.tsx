@@ -69,14 +69,15 @@ export function WizardProvider({ children, sessie }: { children: ReactNode; sess
     haalActueleRentes().then(setActueleRentes).catch(() => {});
     haalActueleNormen().then(setActueleNormen).catch(() => {});
     laadProfiel().then(profiel => {
-      if (!profiel?.wizardInvoer) return;
+      if (!profiel) return;
+      if (profiel.resultaat) setResultaat(profiel.resultaat);
+      if (!profiel.wizardInvoer) return;
       const { situatie: s, inkomen1: i1, inkomen2: i2, verplichtingen: v, woning: w } = profiel.wizardInvoer;
       setSituatie({ ...s });
       setInkomen1({ ...defaultInkomen, ...i1 });
       setInkomen2({ ...defaultInkomen, ...i2 });
       setVerplichtingen({ ...defaultVerplichtingen, ...v });
       setWoning({ ...defaultWoning, ...w });
-      if (profiel.resultaat) setResultaat(profiel.resultaat);
     }).catch(() => {});
   }, []);
 

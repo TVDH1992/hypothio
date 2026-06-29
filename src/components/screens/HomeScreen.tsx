@@ -14,7 +14,9 @@ function euro(n: number) {
 function greeting(naam: string) {
   const uur = new Date().getHours();
   const prefix = uur < 12 ? 'Goedemorgen' : uur < 18 ? 'Goedemiddag' : 'Goedenavond';
-  return `${prefix}, ${naam.split(' ')[0]}`;
+  const voornaam = naam.split(' ')[0];
+  const netjes = voornaam.charAt(0).toUpperCase() + voornaam.slice(1);
+  return `${prefix}, ${netjes}`;
 }
 
 export function HomeScreen() {
