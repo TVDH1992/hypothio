@@ -63,6 +63,15 @@ export interface Profiel {
   wizardInvoer?: WizardInvoer;
 }
 
+export interface Berekening {
+  id: string;
+  naam: string;
+  maxHypotheek: number;
+  resultaat: Resultaat;
+  wizardInvoer: WizardInvoer;
+  aangemaakt: string;
+}
+
 export interface Sessie {
   naam: string;
   email: string;

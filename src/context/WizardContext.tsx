@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { SituatieData, InkomenData, VerplichtingenData, WoningData, Resultaat } from '../types/wizard';
-import type { Sessie } from '../types/profiel';
+import type { Sessie, WizardInvoer } from '../types/profiel';
 import { haalActueleRentes, haalActueleNormen, type RenteTabel } from '../lib/rentes';
 import { TOETSRENTES, LTI_NORMEN, type LtiRij } from '../lib/normen';
 import { laadProfiel } from '../lib/profiel';
@@ -27,6 +27,7 @@ interface WizardContextType {
   updateVerplichtingen: (d: Partial<VerplichtingenData>) => void;
   updateWoning: (d: Partial<WoningData>) => void;
   setResultaat: (r: Resultaat) => void;
+  herstelScenario: (invoer: WizardInvoer, resultaat: Resultaat) => void;
   volgende: () => void;
   vorige: () => void;
 }
@@ -113,6 +114,15 @@ export function WizardProvider({ children, sessie }: { children: ReactNode; sess
       updateVerplichtingen:d => setVerplichtingen(s => ({ ...s, ...d })),
       updateWoning:        d => setWoning(s => ({ ...s, ...d })),
       setResultaat,
+      herstelScenario: (invoer, res) => {
+        setSituatie({ ...invoer.situatie });
+        setInkomen1({ ...defaultInkomen, ...invoer.inkomen1 });
+        setInkomen2({ ...defaultInkomen, ...invoer.inkomen2 });
+        setVerplichtingen({ ...defaultVerplichtingen, ...invoer.verplichtingen });
+        setWoning({ ...defaultWoning, ...invoer.woning });
+        setResultaat(res);
+        setStap(8);
+      },
       volgende,
       vorige,
     }}>

@@ -125,6 +125,48 @@ export async function verwijderWoning(id: string): Promise<void> {
   await supabase.from('woningen').delete().eq('id', id);
 }
 
+// --- Berekeningen (scenario's) ---
+
+export async function laadBerekeningen(): Promise<import('../types/profiel').Berekening[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data } = await supabase
+    .from('berekeningen')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('aangemaakt_op', { ascending: false })
+    .limit(5);
+
+  if (!data) return [];
+
+  return data.map(b => ({
+    id: b.id,
+    naam: b.naam,
+    maxHypotheek: b.max_hypotheek,
+    resultaat: b.resultaat,
+    wizardInvoer: b.wizard_invoer,
+    aangemaakt: new Date(b.aangemaakt_op).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' }),
+  }));
+}
+
+export async function slaBerekening(naam: string, maxHypotheek: number, resultaat: object, wizardInvoer: object): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  await supabase.from('berekeningen').insert({
+    user_id: user.id,
+    naam,
+    max_hypotheek: maxHypotheek,
+    resultaat,
+    wizard_invoer: wizardInvoer,
+  });
+}
+
+export async function verwijderBerekening(id: string): Promise<void> {
+  await supabase.from('berekeningen').delete().eq('id', id);
+}
+
 // --- Funda URL parser ---
 
 export function parseFundaUrl(url: string): { adres: string; stad: string; geldig: boolean } {

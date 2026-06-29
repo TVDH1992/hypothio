@@ -1,11 +1,12 @@
 ﻿import { useEffect, useState } from 'react';
-import { CheckCircle, XCircle, AlertTriangle, RotateCcw, ShieldCheck, TrendingUp, Lightbulb, ArrowRight, Home } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, RotateCcw, ShieldCheck, TrendingUp, Lightbulb, ArrowRight, Home, FileText, BookmarkPlus, X } from 'lucide-react';
 import { useWizard } from '../../context/WizardContext';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../ui/Button';
 import { berekenResultaat } from '../../lib/berekening';
 import { TOETSRENTES, NHG_GRENS_2026, STARTER_GRENS_2026 } from '../../lib/normen';
-import { laadWoningen } from '../../lib/profiel';
+import { laadWoningen, slaBerekening } from '../../lib/profiel';
+import { drukRapportAf } from '../../lib/rapport';
 import type { RentevastePeriode } from '../../types/wizard';
 
 function useCountUp(target: number, duration = 900): number {
@@ -55,9 +56,12 @@ function Badge({ ok, label, sub }: { ok: boolean; label: string; sub?: string })
 const SCENARIO_PERIODES: RentevastePeriode[] = [10, 15, 20, 30];
 
 export function Stap8Resultaat() {
-  const { resultaat, situatie, inkomen1, inkomen2, woning, verplichtingen, rol, setStap, actueleRentes, actueleNormen } = useWizard();
+  const { resultaat, situatie, inkomen1, inkomen2, woning, verplichtingen, rol, setStap, sessie, actueleRentes, actueleNormen } = useWizard();
   const { setTab } = useApp();
   const [woningen, setWoningen] = useState<import('../../types/profiel').GeslaagdeWoning[]>([]);
+  const [toonScenarioForm, setToonScenarioForm] = useState(false);
+  const [scenarioNaam, setScenarioNaam] = useState('');
+  const [scenarioOpgeslagen, setScenarioOpgeslagen] = useState(false);
 
   useEffect(() => {
     laadWoningen().then(setWoningen);
@@ -480,6 +484,59 @@ export function Stap8Resultaat() {
         <Button onClick={() => setTab('woningen')} className="w-full">
           {adv ? 'Woningen checken →' : 'Bekijk woningen binnen dit budget →'}
         </Button>
+
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant="outline" onClick={() => drukRapportAf(resultaat, sessie.naam)}
+            className="w-full flex items-center justify-center gap-2">
+            <FileText className="w-4 h-4" /> PDF rapport
+          </Button>
+          <Button variant="outline" onClick={() => { setToonScenarioForm(v => !v); setScenarioOpgeslagen(false); }}
+            className="w-full flex items-center justify-center gap-2">
+            <BookmarkPlus className="w-4 h-4" /> Scenario opslaan
+          </Button>
+        </div>
+
+        {toonScenarioForm && !scenarioOpgeslagen && (
+          <div className="bg-white border border-[#99248F]/30 rounded-xl p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-[#0D1F3C]">Naam voor dit scenario</p>
+              <button type="button" onClick={() => setToonScenarioForm(false)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <input
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#99248F]"
+              placeholder="bijv. Met partner, Woning €350k, ..."
+              value={scenarioNaam}
+              onChange={e => setScenarioNaam(e.target.value)}
+              maxLength={40}
+            />
+            <Button
+              className="w-full"
+              disabled={!scenarioNaam.trim()}
+              onClick={async () => {
+                await slaBerekening(
+                  scenarioNaam.trim(),
+                  resultaat.effectieveMaxHypotheek,
+                  resultaat,
+                  { situatie, inkomen1, inkomen2, verplichtingen, woning },
+                );
+                setScenarioOpgeslagen(true);
+                setScenarioNaam('');
+              }}
+            >
+              Opslaan
+            </Button>
+          </div>
+        )}
+
+        {scenarioOpgeslagen && (
+          <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 text-sm">
+            <CheckCircle className="w-4 h-4 shrink-0" />
+            Scenario opgeslagen — te vinden in je profiel.
+          </div>
+        )}
+
         <Button variant="outline" onClick={() => setStap(1)} className="w-full">
           <RotateCcw className="w-4 h-4" /> Nieuwe berekening
         </Button>

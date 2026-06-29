@@ -1,20 +1,22 @@
 ﻿import { useState, useEffect } from 'react';
-import { Plus, Trash2, ExternalLink, CheckCircle, XCircle, RotateCcw, User } from 'lucide-react';
+import { Plus, Trash2, ExternalLink, CheckCircle, XCircle, RotateCcw, User, BookmarkPlus } from 'lucide-react';
 import { useWizard } from '../context/WizardContext';
+import { useApp } from '../context/AppContext';
 import { Button } from './ui/Button';
 import { FormField } from './ui/FormField';
 import {
   laadProfiel, slaProfielOp, laadWoningen, voegWoningToe, verwijderWoning,
-  parseFundaUrl, verwijderProfiel,
+  parseFundaUrl, verwijderProfiel, laadBerekeningen, verwijderBerekening,
 } from '../lib/profiel';
-import type { Profiel, GeslaagdeWoning } from '../types/profiel';
+import type { Profiel, GeslaagdeWoning, Berekening } from '../types/profiel';
 
 function euro(n: number) {
   return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
 }
 
 export function ProfielView() {
-  const { resultaat, sessie, setStap, situatie, inkomen1, inkomen2, verplichtingen, woning } = useWizard();
+  const { resultaat, sessie, setStap, situatie, inkomen1, inkomen2, verplichtingen, woning, herstelScenario } = useWizard();
+  const { setTab } = useApp();
   const [profiel, setProfiel] = useState<Profiel | null>(null);
   const [woningen, setWoningen] = useState<GeslaagdeWoning[]>([]);
   const [fundaUrl, setFundaUrl] = useState('');
@@ -22,14 +24,16 @@ export function ProfielView() {
   const [urlFout, setUrlFout] = useState('');
   const [toonWoningForm, setToonWoningForm] = useState(false);
   const [laden, setLaden] = useState(true);
+  const [berekeningen, setBerekeningen] = useState<Berekening[]>([]);
 
   const maxHypotheek = profiel?.maxHypotheek ?? resultaat?.effectieveMaxHypotheek ?? 0;
 
   useEffect(() => {
     async function laad() {
-      const [p, w] = await Promise.all([laadProfiel(), laadWoningen()]);
+      const [p, w, b] = await Promise.all([laadProfiel(), laadWoningen(), laadBerekeningen()]);
       setProfiel(p);
       setWoningen(w);
+      setBerekeningen(b);
       setLaden(false);
     }
     laad();
@@ -213,6 +217,35 @@ export function ProfielView() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Opgeslagen scenario's */}
+      {berekeningen.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <BookmarkPlus className="w-4 h-4 text-[#99248F]" />
+            <p className="text-sm font-semibold text-[#0D1F3C]">Opgeslagen scenario's</p>
+          </div>
+          <div className="space-y-2">
+            {berekeningen.map(b => (
+              <div key={b.id} className="bg-white rounded-xl border border-gray-100 px-4 py-3 flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-[#0D1F3C] truncate">{b.naam}</p>
+                  <p className="text-xs text-gray-400">{euro(b.maxHypotheek)} · {b.aangemaakt}</p>
+                </div>
+                <button type="button"
+                  onClick={() => { herstelScenario(b.wizardInvoer, b.resultaat); setTab('berekenen'); }}
+                  className="text-xs text-[#99248F] font-medium hover:opacity-75 transition cursor-pointer shrink-0">
+                  Laden
+                </button>
+                <button type="button" onClick={async () => { await verwijderBerekening(b.id); setBerekeningen(prev => prev.filter(x => x.id !== b.id)); }}
+                  className="p-1 text-gray-400 hover:text-red-500 transition cursor-pointer shrink-0">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
