@@ -7,6 +7,7 @@ import { berekenResultaat } from '../../lib/berekening';
 import { TOETSRENTES, NHG_GRENS_2026, STARTER_GRENS_2026 } from '../../lib/normen';
 import { laadWoningen, slaBerekening } from '../../lib/profiel';
 import { drukRapportAf } from '../../lib/rapport';
+import { SchuldGrafiek } from '../SchuldGrafiek';
 import type { RentevastePeriode } from '../../types/wizard';
 
 function useCountUp(target: number, duration = 900): number {
@@ -342,6 +343,15 @@ export function Stap8Resultaat() {
             : 'Let op: dit zijn toetsrentes. De werkelijke rente die je betaalt kan lager zijn — vergelijk altijd meerdere aanbieders.'}
         </p>
       </div>
+
+      {/* Schuldverloop grafiek */}
+      {effectieveMaxHypotheek > 0 && (
+        <SchuldGrafiek
+          hypotheek={effectieveMaxHypotheek}
+          jaarsrente={actueleRentes[woning.rentevastePeriode ?? 10] ?? TOETSRENTES[woning.rentevastePeriode ?? 10] ?? 0.05}
+          looptijdJaar={effectieveLooptijd}
+        />
+      )}
 
       {/* Voordelen & kansen */}
       {!adv && (() => {
