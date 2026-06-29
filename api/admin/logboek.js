@@ -16,8 +16,8 @@ export default async function handler(req, res) {
   if (user.user_metadata?.role !== 'admin') return res.status(403).json({ error: 'Geen toegang' });
 
   // Service role voor admin queries — nooit naar frontend sturen
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!serviceKey) return res.status(500).json({ error: 'SUPABASE_SERVICE_ROLE_KEY niet geconfigureerd in Vercel' });
+  const serviceKey = process.env.SUPABASE_SERVICE_KEY;
+  if (!serviceKey) return res.status(500).json({ error: 'SUPABASE_SERVICE_KEY niet geconfigureerd in Vercel' });
 
   const supabaseAdmin = createClient(process.env.VITE_SUPABASE_URL, serviceKey);
 
