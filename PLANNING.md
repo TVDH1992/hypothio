@@ -1,6 +1,7 @@
 # Hypothio — Planning & Voortgang
 
-> Gebouwd door Van der Hel Design · vanderheldesign.nl
+> Gebouwd door Van der Hel Design · vanderheldesign.nl  
+> Bijgewerkt: 30 juni 2026
 
 ---
 
@@ -8,101 +9,142 @@
 
 | Fase | Status | Doel |
 |------|--------|------|
-| Fase 1 — MVP | 🟡 In uitvoering | Werkende tool, livegang hypothio.nl |
-| Fase 2 — Verrijking | ⬜ Gepland | ZZP, PDF, adviseursprofiel |
-| Fase 3 — SaaS | ⬜ Gepland | Abonnementen, embed widget, Chrome Extension |
+| Fase 1 — MVP | ✅ Live | Werkende tool op hypothio.nl via ConsumentenZaken |
+| Fase 2 — UX verdieping | 🟡 In uitvoering | Dashboard, eigen geld, PDF, naam fix |
+| Fase 3 — Verrijking | ⬜ Gepland | ZZP uitbreiding, adviseursprofiel, deelbare links |
+| Fase 4 — SaaS | ⬜ Gepland | Abonnementen, embed widget, Chrome Extension |
 
 ---
 
-## Fase 1 — MVP
+## Wat er nu live staat (v1.3 — 30 jun 2026)
 
-### Week 1-2 (fundament)
+### Core berekening
+- [x] Rekenmodule conform Nibud 2026 + AFM toetsrente
+- [x] Toetsinkomen: loondienst, ORT, jaarbonus, vakantiegeld, 13e maand, ZZP (3-jaarsgemiddelde), pensioen, alimentatie
+- [x] Verplichtingen: persoonlijke lening, doorlopend krediet, creditcard, private lease, studieschuld (oud/nieuw stelsel), alimentatie betalen, BKR-melding
+- [x] NHG-check (grens €470.000, premie 0,6%)
+- [x] Startersvrijstelling (< 35 jaar, koopsom < €510.000)
+- [x] Energielabel bonus (A+++ t/m A+)
+- [x] AOW-leeftijdbeperking: looptijd gecapped op 67 − leeftijd
+- [x] Bijkomende kosten: overdrachtsbelasting, notaris, taxatie, advies, NHG-premie
 
-- [x] Project opzetten (Vite + React + TypeScript + Tailwind CSS)
-- [x] Rekenmodule bouwen (`src/lib/berekening.ts`)
-  - [x] Toetsinkomen berekening (loondienst)
-  - [x] Verplichtingen (leningen, studieschuld, alimentatie)
-  - [x] LTI-norm berekening (Nibud 2026, hardcoded)
-  - [x] NHG-check (grens €435.000, premie 0,6%)
-  - [x] Energielabel bonus (A+++ t/m A+)
-  - [x] Startersvrijstelling check (< 35 jaar, < €510.000)
-  - [x] AFM-toetsrente principe (< 10 jaar → 5%, ≥ 10 jaar → werkelijke rente)
-  - [x] Maandlasten bruto/netto (annuïtair, lineair, aflossingsvrij)
-- [x] Wizard UI — 8 stappen
-  - [x] Stap 1: Welkom + rolkeuze (consument / adviseur)
-  - [x] Stap 2: Situatie (alleen/partner, starter/doorstromer, leeftijd)
-  - [x] Stap 3: Inkomen aanvrager 1
-  - [x] Stap 4: Inkomen aanvrager 2 (conditioneel bij partner)
-  - [x] Stap 5: Financiële verplichtingen
-  - [x] Stap 6: De woning (koopsom, energielabel, eigen geld, rentevaste periode)
-  - [x] Stap 7: Laadscherm
-  - [x] Stap 8: Resultaatpagina
-- [x] Consument / adviseur modus (taal + detailniveau)
+### Wizard UI — 8 stappen
+- [x] Stap 1: Welkom + rolkeuze (consument / adviseur)
+- [x] Stap 2: Situatie (alleen/partner, starter/doorstromer, leeftijd)
+- [x] Stap 3: Inkomen aanvrager 1 (incl. loonstrook-upload via Claude AI)
+- [x] Stap 4: Inkomen aanvrager 2 (conditioneel) + live partner indicatie
+- [x] Stap 5: Financiële verplichtingen
+- [x] Stap 6: De woning (koopsom, energielabel, eigen geld, rentevaste periode, hypotheekvorm, looptijd)
+- [x] Stap 7: Laadscherm
+- [x] Stap 8: Resultaatpagina (PDF, scenario's opslaan, schuldverloop grafiek)
 
-### Week 2-3 (afronden & koppelen)
+### Dataopslag & authenticatie
+- [x] Supabase Auth (magic link + email/wachtwoord)
+- [x] Supabase RLS — gebruikers zien alleen eigen data
+- [x] `profielen` tabel — wizard invoer + resultaat gecacht (auto-save na berekening)
+- [x] `woningen` tabel — opgeslagen Funda woningen incl. AI-analyse cache
+- [x] `berekeningen` tabel — opgeslagen scenario's (max 5 per gebruiker)
+- [x] `rentestand` tabel — indicatieve marktrentes beheerbaar via admin panel
 
-- [ ] Supabase project aanmaken
-  - [ ] Normentabellen aanmaken en vullen
-    - [ ] `toetsrentes` (per rentevaste periode)
-    - [ ] `nhg_grenzen` (grens + premiepercent)
-    - [ ] `lti_normen` (Nibud tabel per inkomenscategorie)
-    - [ ] `energielabel_bonus` (per labelklasse)
-    - [ ] `afm_toetsrente` (wettelijke toetsrente)
-- [ ] Vercel API endpoint (`/api/bereken`)
-  - [ ] Normen ophalen uit Supabase
-  - [ ] Rekenlogica draaien op backend
-  - [ ] JSON-response terug naar frontend
-- [ ] Upstash Redis rate limiter op de API
+### Dashboard & navigatie
+- [x] Bottom nav: Dashboard · Woningen · Profiel · Admin
+- [x] Dashboard (lege staat): donkere hero banner met "Start berekening"
+- [x] Dashboard (met resultaat): gradiënt hero, initialen avatar, status badges (NHG/Starter/Hypotheekvorm), uitklapbare bijkomende kosten, woning-overzicht, scenario's, snelle acties
+- [x] Auto-herstel dashboard na page reload (vanuit Supabase profiel)
 
-### Week 3-4 (testen & live)
+### Woning analyse
+- [x] Adreszoeker (PDOK/BAG API — gratis, geen key nodig)
+- [x] WOZ-waarde ophalen + geschatte marktwaarde (WOZ × 1,10)
+- [x] Biedadvies (groen/oranje/rood op basis van vraagprijs vs marktwaarde)
+- [x] Budget check: past woning binnen max hypotheek?
+- [x] Funda URL analyse via Claude AI (marktwaarde, biedadvies, plus/aandachtspunten)
+- [x] Huispedia verkoophistorie (laatste transacties)
+- [x] AI-analyse gecacht per woning in Supabase (geen dubbele API-calls)
+- [x] Woningen scherm: budget-banner, gekleurde topbalk, visuele budget-balk per kaart
 
-- [ ] Testen met echte cases (samen met adviseur)
-  - [ ] Testcase: €50k inkomen, geen verplichtingen, €350k woning → ~€219k
-  - [ ] Testcase: 2 aanvragers, studieschuld, NHG
-  - [ ] Testcase: starter < 35 jaar, koopsom €400k
-- [ ] Privacy Policy opstellen
-- [ ] Deploy op Vercel
-- [ ] Domein koppelen (hypothio.nl)
-- [ ] **Livegang Fase 1** 🚀
+### PDF & scenario's
+- [x] PDF rapport (nieuwe tab + window.print()) — ConsumentenZaken branding
+- [x] Scenario's opslaan (max 5, naam invoeren, laadbaar vanuit dashboard + profiel)
+- [x] Schuldverloop grafiek (SVG, annuïtair vs lineair, halvering-marker)
+
+### Admin panel
+- [x] Dashboard: KPI tiles (gebruikers, berekeningen, woningen), KPI grafiek
+- [x] Rentestand beheer (alle periodes, live aanpasbaar)
+- [x] Gebruikers logboek (via service role endpoint — veilig server-side)
+- [x] Versie-changelog met tijdlijn + roadmap "Binnenkort"
+- [x] Beveiliging: service role key alleen in `api/admin/logboek.js` (Vercel server-side)
+
+### Technisch
+- [x] React 18 + Vite 5 + TypeScript + Tailwind CSS v4
+- [x] React.lazy code splitting — hoofdbundle 374kB (was 501kB)
+- [x] Vercel serverless API routes
+- [x] ConsumentenZaken huisstijl (#99248F paars, #0D1F3C navy)
 
 ---
 
-## Fase 2 — Verrijking
+## Fase 2 — UX verdieping (lopend)
 
-- [ ] ZZP-module (gemiddelde winst 3 jaar)
-- [ ] Rentevergelijker (alle periodes naast elkaar)
-- [ ] PDF-rapport generatie (Puppeteer / jsPDF)
-- [ ] Adviseursprofiel (login via Supabase Auth)
-- [ ] Whitelabel huisstijl (logo + kleur per adviseur)
-- [ ] Deelbare resultaatlink (unieke URL)
+### Hoog prioriteit
+- [ ] **Eigen geld slider** — live preview op dashboard/resultaat: "Als je €X meer inlegt → €Y meer budget"
+- [ ] **Naam fix** — display naam instellen in Profiel (nu email-prefix als fallback)
+- [ ] **Budget gap visualisatie** — balk die toont hoe ver woning van budget zit
+
+### Midden prioriteit
+- [ ] **Eigen geld slider op Stap 6** — live herberekening tijdens invullen
+- [ ] **Rentevergelijker** — alle vaste periodes naast elkaar op resultaatpagina
+- [ ] **Wist je dat…** tips contextueel op dashboard (NHG voordeel, startersvrijstelling etc.)
+- [ ] **Notificatie** als rente significant veranderd is sinds laatste berekening
+
+### Laag prioriteit
+- [ ] **Deelbare resultaatlink** — unieke URL voor je berekening
+- [ ] **Meerdere profielen** — "Scenario 1" en "Scenario 2" naast elkaar vergelijken
+- [ ] **Animaties** — fade-in dashboard metrics, countup animatie op groot bedrag
 
 ---
 
-## Fase 3 — SaaS
+## Fase 3 — Verrijking
 
-- [ ] Abonnementsmodel via Stripe
-- [ ] Beheerportaal adviseur
-- [ ] WOZ-waarde ophalen (PDOK / BAG API)
-- [ ] Chrome Extension wrapper
-- [ ] Embed widget (snippet voor op eigen website)
+- [ ] ZZP-module uitbreiden (nu basisondersteuning — uitbreiden met VOF, DGA, freelance)
+- [ ] Adviseursprofiel (eigen klanten beheren, whitelabel huisstijl)
+- [ ] Berekening voor klant opslaan + sturen (adviseur → consument)
+- [ ] Loonstrook upload verbeteren (meer loonstrook-formaten herkennen)
+- [ ] Hypotheekvormen uitbreiden (combinatiehypotheek)
+- [ ] Koppeling met echte rente-aanbieders (affiliate)
+
+---
+
+## Fase 4 — SaaS
+
+- [ ] Abonnementsmodel via Stripe (adviseurs: maandelijks/jaarlijks)
+- [ ] Beheerportaal adviseur (dashboard, klanten, rapporten)
+- [ ] Embed widget (snippet voor op eigen website adviseur)
+- [ ] Chrome Extension (Funda integratie — budget check direct op listingpagina)
 - [ ] Meerdere talen (NL + EN)
+- [ ] API voor third-party integraties
 
 ---
 
-## Open punten / beslissingen
+## Technische schuld / open punten
 
-| Punt | Status |
-|------|--------|
-| ZZP naar Fase 2 verschoven | ✅ Besloten |
-| Zustand ipv React Context | ⬜ Nog te migreren |
-| React Hook Form + Zod per stap | ⬜ Nog te implementeren |
-| Consument/adviseur modus | 🟡 In uitvoering |
-| Berekening client-side (tijdelijk) | 🟡 Verplaatsen naar API in week 2-3 |
+| Punt | Status | Prioriteit |
+|------|--------|-----------|
+| Zustand ipv React Context | ⬜ Optioneel | Laag — Context werkt prima |
+| React Hook Form + Zod validatie | ⬜ Optioneel | Midden |
+| LTI-normen + toetsrentes live uit Supabase | 🟡 Deels — rentes live, normen hardcoded | Midden |
+| AFM-toetsrente mechanisme verifiëren | ⬜ | Hoog |
+| Unit tests rekenmodule | ⬜ | Midden |
+| E2E tests wizard flow | ⬜ | Laag |
 
 ---
 
-## Technische schuld / refactors
+## Admin acties (beheer)
 
-- [ ] Migrate van React Context → Zustand (zie ontwerp §8.1)
-- [ ] Validatie per stap via React Hook Form + Zod
-- [ ] LTI-normen en toetsrentes uit Supabase halen (nu hardcoded in `src/lib/normen.ts`)
+**Admin role toekennen** via Supabase → SQL Editor:
+```sql
+UPDATE auth.users 
+SET raw_user_meta_data = raw_user_meta_data || '{"role": "admin"}'::jsonb
+WHERE email = 'email@voorbeeld.com';
+```
+
+**Rente bijwerken:** Admin panel → Rentestand tab → aanpassen → Opslaan  
+**Nieuwe versie toevoegen:** `src/components/screens/AdminScreen.tsx` → `RELEASES` array bovenaan
