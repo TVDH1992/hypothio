@@ -70,6 +70,7 @@ export function Stap8Resultaat() {
     nhgMogelijk, startersvrijstelling, energielabelBonus,
     bijkomendeKosten, toetsinkomen, maandlastenVerplichtingen,
     maxHypotheekOpInkomen, maxHypotheekOpWoning, eigenGeldTekort,
+    effectieveLooptijd, looptijdGecapped,
   } = resultaat;
 
   const scenarios = SCENARIO_PERIODES.map(p => {
@@ -136,6 +137,21 @@ export function Stap8Resultaat() {
                   : `Je hebt nog ca. ${euro(eigenGeldTekort)} extra nodig — dit kan extra spaargeld zijn of een hogere hypotheek.`}
               </p>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* AOW looptijdwaarschuwing */}
+      {looptijdGecapped && (
+        <div className="flex gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800">
+          <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold">Looptijd aangepast vanwege leeftijd</p>
+            <p className="text-xs mt-0.5 opacity-80">
+              {adv
+                ? `Aanvrager is ${situatie.leeftijd} jaar. Looptijd begrensd op ${effectieveLooptijd} jaar (AOW-leeftijd 67).`
+                : `Omdat je ${situatie.leeftijd} jaar bent, is de looptijd beperkt tot ${effectieveLooptijd} jaar. Dit verlaagt je maximale hypotheek.`}
+            </p>
           </div>
         </div>
       )}
@@ -322,6 +338,70 @@ export function Stap8Resultaat() {
             : 'Let op: dit zijn toetsrentes. De werkelijke rente die je betaalt kan lager zijn — vergelijk altijd meerdere aanbieders.'}
         </p>
       </div>
+
+      {/* Voordelen & kansen */}
+      {!adv && (() => {
+        const huidigenToetsrente = actueleRentes[woning.rentevastePeriode ?? 10] ?? TOETSRENTES[woning.rentevastePeriode ?? 10] ?? 0.05;
+        const r = huidigenToetsrente / 12;
+        const n = effectieveLooptijd * 12;
+        const af = r === 0 ? n : (Math.pow(1 + r, n) - 1) / (r * Math.pow(1 + r, n));
+
+        const tips: { emoji: string; titel: string; tekst: string }[] = [];
+
+        // Energielabel verbeteren
+        const huidigLabel = woning.energielabel ?? 'C';
+        const maxBonus = 40_000;
+        const extraEnergie = maxBonus - energielabelBonus;
+        if (extraEnergie >= 5_000) {
+          const huidigTekst = energielabelBonus === 0
+            ? `Label ${huidigLabel} geeft geen bonus. Met label A+ leen je €10.000 meer, A++ €15.000, A+++ €40.000.`
+            : `Met label A+++ of hoger kun je nog €${(extraEnergie / 1_000).toFixed(0)}.000 extra lenen bovenop je huidige bonus.`;
+          tips.push({ emoji: '⚡', titel: 'Energiezuinig huis = meer hypotheek', tekst: huidigTekst });
+        }
+
+        // Studieschuld aflossen
+        const schuld = verplichtingen.studieschuldOrigineel ?? 0;
+        if (schuld > 0) {
+          const pct = (verplichtingen.studieschuldStelsel === 'oud') ? 0.0045 : 0.0035;
+          const extra = Math.round(schuld * pct * af / 1_000) * 1_000;
+          if (extra >= 5_000) {
+            tips.push({ emoji: '🎓', titel: 'Studieschuld aflossen = meer lenen', tekst: `Door je DUO-schuld van ${euro(schuld)} af te lossen kun je ca. ${euro(extra)} meer hypotheek krijgen.` });
+          }
+        }
+
+        // Nieuwbouw voordeel
+        if (!startersvrijstelling) {
+          const besparing = koopsom > 0 ? Math.round(koopsom * 0.02) : 7_000;
+          tips.push({ emoji: '🏗️', titel: 'Nieuwbouw: geen overdrachtsbelasting', tekst: koopsom > 0 ? `Nieuwbouw (vrij op naam) bespaart je ${euro(besparing)} overdrachtsbelasting t.o.v. bestaande bouw.` : `Nieuwbouw kopen is vrij op naam — geen 2% overdrachtsbelasting. Bij €350.000 scheelt dat €7.000.` });
+        }
+
+        // NHG rentevoordeel
+        if (nhgMogelijk) {
+          const jaarVoordeel = Math.round(effectieveMaxHypotheek * 0.004);
+          tips.push({ emoji: '🛡️', titel: 'NHG geeft je een lagere rente', tekst: `Met NHG betaal je gemiddeld 0,3–0,5% minder rente — ca. ${euro(jaarVoordeel)} per jaar goedkoper dan zonder borgtocht.` });
+        }
+
+        if (tips.length === 0) return null;
+        return (
+          <div className="bg-white rounded-2xl border border-gray-100 p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <Lightbulb className="w-4 h-4 text-amber-500" />
+              <p className="text-sm font-semibold text-[#0D1F3C]">Wist je dat...</p>
+            </div>
+            <div className="space-y-2.5">
+              {tips.map((tip, i) => (
+                <div key={i} className="flex gap-3 p-3 bg-gray-50 rounded-xl">
+                  <span className="text-lg shrink-0 leading-none mt-0.5">{tip.emoji}</span>
+                  <div>
+                    <p className="text-sm font-medium text-[#0D1F3C]">{tip.titel}</p>
+                    <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{tip.tekst}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Trust badges */}
       <div className="grid grid-cols-3 gap-2">

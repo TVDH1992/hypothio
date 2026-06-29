@@ -67,4 +67,6 @@ export interface Resultaat {
   nettoMaandlast: number;
   bijkomendeKosten: BijkomendeKosten;
   eigenGeldTekort: number;
+  effectieveLooptijd: number;
+  looptijdGecapped: boolean;
 }

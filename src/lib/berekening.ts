@@ -84,11 +84,17 @@ export function berekenResultaat(
   const ltiFactor  = getLtiFactor(toetsinkomen, ltiNormen);
   const annFactor  = annuityFactor(toetsrente, looptijdJaar);
 
-  // Max op basis van inkomen minus verplichtingen
+  // Max op basis van inkomen minus verplichtingen (annFactor op gewenste looptijd voor vergelijkbaarheid)
   const maxOpInkomen = Math.max(0, toetsinkomen * ltiFactor - maandlasten * annFactor);
 
   const koopsom = woning.koopsom ?? 0;
   const energielabelBonus = ENERGIELABEL_BONUS[woning.energielabel ?? 'C'] ?? 0;
+
+  // AOW-leeftijdbeperking: looptijd mag niet voorbij AOW-leeftijd (67)
+  const leeftijd = situatie.leeftijd ?? 0;
+  const maxLooptijdLeeftijd = leeftijd >= 18 ? Math.max(1, 67 - leeftijd) : looptijdJaar;
+  const effectieveLooptijd = Math.min(looptijdJaar, maxLooptijdLeeftijd);
+  const looptijdGecapped = leeftijd >= 18 && effectieveLooptijd < looptijdJaar;
 
   // LTV-grens puur op woningwaarde (100%); energiebonus wordt ALTIJD bovenop effectief max opgeteld
   const maxOpWoning = koopsom * MAX_LTV;
@@ -105,7 +111,6 @@ export function berekenResultaat(
   // NHG: koopsom ≤ grens én NHG vereist annuïtair of lineair aflossing
   const nhgMogelijk = koopsom > 0 && koopsom <= NHG_GRENS_2026 && hypotheekvorm !== 'aflossingsvrij';
 
-  const leeftijd = situatie.leeftijd ?? 0;
   const startersvrijstelling =
     situatie.isStarter === true &&
     leeftijd >= 18 &&
@@ -118,13 +123,13 @@ export function berekenResultaat(
 
   let brutoMaandlast: number;
   if (hypotheekvorm === 'lineair') {
-    const aflossing = hypotheekBedrag / (looptijdJaar * 12);
+    const aflossing = hypotheekBedrag / (effectieveLooptijd * 12);
     const rente     = hypotheekBedrag * toetsrente / 12;
     brutoMaandlast  = aflossing + rente;
   } else if (hypotheekvorm === 'aflossingsvrij') {
     brutoMaandlast = hypotheekBedrag * toetsrente / 12;
   } else {
-    brutoMaandlast = maandlastAnnuitair(hypotheekBedrag, toetsrente, looptijdJaar);
+    brutoMaandlast = maandlastAnnuitair(hypotheekBedrag, toetsrente, effectieveLooptijd);
   }
 
   // Netto maandlast (eerste maand benadering)
@@ -160,5 +165,7 @@ export function berekenResultaat(
     nettoMaandlast,
     bijkomendeKosten: { overdrachtsbelasting: overdracht, notarisKosten: notaris, taxatieKosten: taxatie, adviesKosten: advies, nhgPremie, totaal },
     eigenGeldTekort,
+    effectieveLooptijd,
+    looptijdGecapped,
   };
 }
