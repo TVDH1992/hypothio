@@ -25,6 +25,7 @@ interface GebruikerRij {
   max_hypotheek: number | null;
   berekening_op: string | null;
   aantal_woningen: number;
+  aantal_scenarios: number;
 }
 
 export function AdminScreen() {
@@ -226,7 +227,12 @@ export function AdminScreen() {
                     {u.berekening_op && <span>Berekening {datumKort(u.berekening_op)}</span>}
                     {u.aantal_woningen > 0 && (
                       <span className="flex items-center gap-1">
-                        <Home className="w-3 h-3" /> {u.aantal_woningen}
+                        <Home className="w-3 h-3" /> {u.aantal_woningen} {u.aantal_woningen === 1 ? 'woning' : 'woningen'}
+                      </span>
+                    )}
+                    {u.aantal_scenarios > 0 && (
+                      <span className="flex items-center gap-1">
+                        <GitMerge className="w-3 h-3" /> {u.aantal_scenarios} {u.aantal_scenarios === 1 ? 'scenario' : "scenario's"}
                       </span>
                     )}
                   </div>
