@@ -1,4 +1,4 @@
-import { Home, LayoutDashboard, Building2, User, Settings } from 'lucide-react';
+import { LayoutDashboard, Building2, User, Settings } from 'lucide-react';
 import { useApp, type Tab } from '../../context/AppContext';
 import { useWizard } from '../../context/WizardContext';
 
@@ -10,11 +10,10 @@ export function BottomNav({ isAdmin }: Props) {
   const { tab, setTab } = useApp();
   const { setStap } = useWizard();
 
-  const ITEMS: { tab: Tab; label: string; Icon: typeof Home }[] = [
-    { tab: 'berekenen',  label: 'Home',      Icon: Home            },
-    { tab: 'dashboard',  label: 'Dashboard', Icon: LayoutDashboard },
-    { tab: 'woningen',   label: 'Woningen',  Icon: Building2       },
-    { tab: 'profiel',    label: 'Profiel',   Icon: User            },
+  const ITEMS: { tab: Tab; label: string; Icon: typeof LayoutDashboard }[] = [
+    { tab: 'berekenen', label: 'Dashboard', Icon: LayoutDashboard },
+    { tab: 'woningen',  label: 'Woningen',  Icon: Building2       },
+    { tab: 'profiel',   label: 'Profiel',   Icon: User            },
     ...(isAdmin ? [{ tab: 'admin' as Tab, label: 'Admin', Icon: Settings }] : []),
   ];
 

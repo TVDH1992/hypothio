@@ -15,7 +15,6 @@ const Stap5Verplichtingen = lazy(() => import('./components/wizard/Stap5Verplich
 const Stap6Woning       = lazy(() => import('./components/wizard/Stap6Woning').then(m => ({ default: m.Stap6Woning })));
 const Stap7Berekenen    = lazy(() => import('./components/wizard/Stap7Berekenen').then(m => ({ default: m.Stap7Berekenen })));
 const Stap8Resultaat    = lazy(() => import('./components/wizard/Stap8Resultaat').then(m => ({ default: m.Stap8Resultaat })));
-const HomeScreen        = lazy(() => import('./components/screens/HomeScreen').then(m => ({ default: m.HomeScreen })));
 const DashboardScreen   = lazy(() => import('./components/screens/DashboardScreen').then(m => ({ default: m.DashboardScreen })));
 const WoningenScreen    = lazy(() => import('./components/screens/WoningenScreen').then(m => ({ default: m.WoningenScreen })));
 const ProfielScreen     = lazy(() => import('./components/screens/ProfielScreen').then(m => ({ default: m.ProfielScreen })));
@@ -68,7 +67,7 @@ function AppShell({ sessie, onUitloggen }: { sessie: Sessie; onUitloggen: () => 
         <Suspense fallback={<div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-[#99248F] border-t-transparent rounded-full animate-spin" /></div>}>
           {tab === 'berekenen' && (
             <div key={stap} className="animate-stap">
-              {stap === 0 && <HomeScreen />}
+              {stap === 0 && <DashboardScreen />}
               {stap === 1 && <Stap1Welkom />}
               {stap === 2 && <Stap2Situatie />}
               {stap === 3 && <Stap3Inkomen1 />}
@@ -79,7 +78,6 @@ function AppShell({ sessie, onUitloggen }: { sessie: Sessie; onUitloggen: () => 
               {stap === 8 && <Stap8Resultaat />}
             </div>
           )}
-          {tab === 'dashboard' && <DashboardScreen />}
           {tab === 'woningen' && <WoningenScreen />}
           {tab === 'profiel'  && <ProfielScreen onUitloggen={onUitloggen} />}
           {tab === 'admin' && isAdmin && <AdminScreen />}

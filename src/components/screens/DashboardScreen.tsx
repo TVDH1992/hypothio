@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ShieldCheck, TrendingUp, Plus, FileText, ChevronRight, CheckCircle, XCircle, BookmarkPlus, Users, User, Calculator } from 'lucide-react';
+import { ShieldCheck, TrendingUp, Plus, FileText, ChevronRight, CheckCircle, XCircle, BookmarkPlus, Users, User, RefreshCw } from 'lucide-react';
 import { useWizard } from '../../context/WizardContext';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../ui/Button';
@@ -9,6 +9,14 @@ import type { GeslaagdeWoning, Berekening } from '../../types/profiel';
 
 function euro(n: number) {
   return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
+}
+
+function greeting(naam: string) {
+  const uur = new Date().getHours();
+  const prefix = uur < 12 ? 'Goedemorgen' : uur < 18 ? 'Goedemiddag' : 'Goedenavond';
+  const voornaam = naam.split(' ')[0];
+  const netjes = voornaam.charAt(0).toUpperCase() + voornaam.slice(1);
+  return `${prefix}, ${netjes}`;
 }
 
 export function DashboardScreen() {
@@ -28,18 +36,30 @@ export function DashboardScreen() {
     return (
       <div className="space-y-5">
         <div className="pt-1">
-          <h1 className="text-xl font-bold text-[#0D1F3C]">Dashboard</h1>
-          <p className="text-sm text-gray-400 mt-0.5">Nog geen berekening gedaan</p>
+          <h1 className="text-2xl font-bold text-[#0D1F3C]">{greeting(sessie.naam)}</h1>
+          <p className="text-sm text-gray-400 mt-0.5">Wat kun jij lenen?</p>
         </div>
-        <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-8 text-center space-y-4">
-          <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center mx-auto">
-            <Calculator className="w-6 h-6 text-gray-300" />
-          </div>
+        <div className="bg-[#0D1F3C] rounded-2xl p-6 text-white text-center space-y-4">
+          <ShieldCheck className="w-10 h-10 text-[#99248F] mx-auto" />
           <div>
-            <p className="text-sm font-semibold text-[#0D1F3C]">Start met een berekening</p>
-            <p className="text-xs text-gray-400 mt-1">Dan verschijnt hier jouw persoonlijk dashboard met maximale hypotheek, bijkomende kosten en meer.</p>
+            <p className="text-lg font-bold">Gratis hypotheek berekening</p>
+            <p className="text-sm text-white/50 mt-1">Conform Nibud 2026 — duurt ±3 minuten</p>
           </div>
-          <Button onClick={() => { setTab('berekenen'); setStap(1); }}>Start berekening →</Button>
+          <Button size="lg" onClick={() => setStap(1)} className="w-full">Start berekening →</Button>
+        </div>
+        <div className="space-y-2">
+          {[
+            { nr: '1', tekst: 'Vul inkomen en situatie in' },
+            { nr: '2', tekst: 'Berekening conform Nibud 2026 & AFM' },
+            { nr: '3', tekst: 'Vergelijk woningen op budget' },
+          ].map(s => (
+            <div key={s.nr} className="flex items-center gap-3 bg-white rounded-xl border border-gray-100 p-3.5">
+              <div className="w-7 h-7 bg-[#0D1F3C] rounded-full flex items-center justify-center shrink-0">
+                <span className="text-white text-xs font-bold">{s.nr}</span>
+              </div>
+              <p className="text-sm text-gray-600">{s.tekst}</p>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -55,13 +75,13 @@ export function DashboardScreen() {
       {/* Header */}
       <div className="flex items-center justify-between pt-1">
         <div>
-          <h1 className="text-xl font-bold text-[#0D1F3C]">Dashboard</h1>
+          <h1 className="text-xl font-bold text-[#0D1F3C]">{greeting(sessie.naam)}</h1>
           <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
             {metPartner ? <Users className="w-3 h-3" /> : <User className="w-3 h-3" />}
             {metPartner ? 'Berekening met partner' : 'Berekening alleen'}
           </p>
         </div>
-        <button type="button" onClick={() => { setTab('berekenen'); setStap(8); }}
+        <button type="button" onClick={() => setStap(8)}
           className="text-xs text-[#99248F] hover:opacity-75 flex items-center gap-1 cursor-pointer">
           Detail <ChevronRight className="w-3 h-3" />
         </button>
@@ -184,7 +204,7 @@ export function DashboardScreen() {
           <div className="space-y-2">
             {berekeningen.slice(0, 3).map(b => (
               <button key={b.id} type="button"
-                onClick={() => { herstelScenario(b.wizardInvoer, b.resultaat); setTab('berekenen'); setStap(8); }}
+                onClick={() => { herstelScenario(b.wizardInvoer, b.resultaat); setStap(8); }}
                 className="w-full bg-white rounded-xl border border-gray-100 px-4 py-3 flex items-center gap-3 hover:border-[#99248F]/30 transition cursor-pointer group">
                 <BookmarkPlus className="w-4 h-4 text-[#99248F] shrink-0" />
                 <div className="flex-1 min-w-0 text-left">
@@ -201,9 +221,9 @@ export function DashboardScreen() {
       {/* Snelle acties */}
       <div className="grid grid-cols-3 gap-2">
         {[
-          { icon: TrendingUp,  label: 'Analyseer woning', actie: () => setTab('woningen') },
-          { icon: FileText,    label: 'PDF rapport',       actie: () => drukRapportAf(resultaat, sessie.naam) },
-          { icon: ShieldCheck, label: 'Herbereken',        actie: () => { setTab('berekenen'); setStap(1); } },
+          { icon: TrendingUp, label: 'Analyseer woning',     actie: () => setTab('woningen') },
+          { icon: FileText,   label: 'PDF rapport',           actie: () => drukRapportAf(resultaat, sessie.naam) },
+          { icon: RefreshCw,  label: 'Nieuwe berekening',    actie: () => setStap(1) },
         ].map(({ icon: Icon, label, actie }) => (
           <button key={label} type="button" onClick={actie}
             className="bg-white rounded-xl border border-gray-100 p-3 flex flex-col items-center gap-2 hover:border-[#99248F]/30 transition cursor-pointer">
