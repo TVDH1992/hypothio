@@ -1,25 +1,26 @@
-﻿import { useState, useEffect } from 'react';
+﻿import { useState, useEffect, lazy, Suspense } from 'react';
 import { WizardProvider, useWizard } from './context/WizardContext';
 import { AppProvider, useApp } from './context/AppContext';
 import { supabase } from './lib/supabase';
 import { ProgressBar } from './components/ui/ProgressBar';
 import { BottomNav } from './components/nav/BottomNav';
-import { Stap1Welkom } from './components/wizard/Stap1Welkom';
-import { Stap2Situatie } from './components/wizard/Stap2Situatie';
-import { Stap3Inkomen1 } from './components/wizard/Stap3Inkomen1';
-import { Stap4Inkomen2 } from './components/wizard/Stap4Inkomen2';
-import { Stap5Verplichtingen } from './components/wizard/Stap5Verplichtingen';
-import { Stap6Woning } from './components/wizard/Stap6Woning';
-import { Stap7Berekenen } from './components/wizard/Stap7Berekenen';
-import { Stap8Resultaat } from './components/wizard/Stap8Resultaat';
-import { WoningenScreen } from './components/screens/WoningenScreen';
-import { ProfielScreen } from './components/screens/ProfielScreen';
-import { HomeScreen } from './components/screens/HomeScreen';
-import { AdminScreen } from './components/screens/AdminScreen';
-import { LandingPage } from './components/LandingPage';
-import { BevestigingScreen } from './components/BevestigingScreen';
 import { verwijderSessie } from './lib/profiel';
 import type { Sessie } from './types/profiel';
+
+const Stap1Welkom       = lazy(() => import('./components/wizard/Stap1Welkom').then(m => ({ default: m.Stap1Welkom })));
+const Stap2Situatie     = lazy(() => import('./components/wizard/Stap2Situatie').then(m => ({ default: m.Stap2Situatie })));
+const Stap3Inkomen1     = lazy(() => import('./components/wizard/Stap3Inkomen1').then(m => ({ default: m.Stap3Inkomen1 })));
+const Stap4Inkomen2     = lazy(() => import('./components/wizard/Stap4Inkomen2').then(m => ({ default: m.Stap4Inkomen2 })));
+const Stap5Verplichtingen = lazy(() => import('./components/wizard/Stap5Verplichtingen').then(m => ({ default: m.Stap5Verplichtingen })));
+const Stap6Woning       = lazy(() => import('./components/wizard/Stap6Woning').then(m => ({ default: m.Stap6Woning })));
+const Stap7Berekenen    = lazy(() => import('./components/wizard/Stap7Berekenen').then(m => ({ default: m.Stap7Berekenen })));
+const Stap8Resultaat    = lazy(() => import('./components/wizard/Stap8Resultaat').then(m => ({ default: m.Stap8Resultaat })));
+const HomeScreen        = lazy(() => import('./components/screens/HomeScreen').then(m => ({ default: m.HomeScreen })));
+const WoningenScreen    = lazy(() => import('./components/screens/WoningenScreen').then(m => ({ default: m.WoningenScreen })));
+const ProfielScreen     = lazy(() => import('./components/screens/ProfielScreen').then(m => ({ default: m.ProfielScreen })));
+const AdminScreen       = lazy(() => import('./components/screens/AdminScreen').then(m => ({ default: m.AdminScreen })));
+const LandingPage       = lazy(() => import('./components/LandingPage').then(m => ({ default: m.LandingPage })));
+const BevestigingScreen = lazy(() => import('./components/BevestigingScreen').then(m => ({ default: m.BevestigingScreen })));
 
 const STAP_LABELS: Record<number, string> = {
   2: 'Situatie', 3: 'Inkomen', 4: 'Inkomen partner',
@@ -63,22 +64,24 @@ function AppShell({ sessie, onUitloggen }: { sessie: Sessie; onUitloggen: () => 
       )}
 
       <main className="max-w-xl mx-auto px-4 py-8" style={{ paddingBottom: 'calc(7rem + env(safe-area-inset-bottom))' }}>
-        {tab === 'berekenen' && (
-          <div key={stap} className="animate-stap">
-            {stap === 0 && <HomeScreen />}
-            {stap === 1 && <Stap1Welkom />}
-            {stap === 2 && <Stap2Situatie />}
-            {stap === 3 && <Stap3Inkomen1 />}
-            {stap === 4 && <Stap4Inkomen2 />}
-            {stap === 5 && <Stap5Verplichtingen />}
-            {stap === 6 && <Stap6Woning />}
-            {stap === 7 && <Stap7Berekenen />}
-            {stap === 8 && <Stap8Resultaat />}
-          </div>
-        )}
-        {tab === 'woningen' && <WoningenScreen />}
-        {tab === 'profiel'  && <ProfielScreen onUitloggen={onUitloggen} />}
-        {tab === 'admin' && isAdmin && <AdminScreen />}
+        <Suspense fallback={<div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-[#99248F] border-t-transparent rounded-full animate-spin" /></div>}>
+          {tab === 'berekenen' && (
+            <div key={stap} className="animate-stap">
+              {stap === 0 && <HomeScreen />}
+              {stap === 1 && <Stap1Welkom />}
+              {stap === 2 && <Stap2Situatie />}
+              {stap === 3 && <Stap3Inkomen1 />}
+              {stap === 4 && <Stap4Inkomen2 />}
+              {stap === 5 && <Stap5Verplichtingen />}
+              {stap === 6 && <Stap6Woning />}
+              {stap === 7 && <Stap7Berekenen />}
+              {stap === 8 && <Stap8Resultaat />}
+            </div>
+          )}
+          {tab === 'woningen' && <WoningenScreen />}
+          {tab === 'profiel'  && <ProfielScreen onUitloggen={onUitloggen} />}
+          {tab === 'admin' && isAdmin && <AdminScreen />}
+        </Suspense>
       </main>
 
       <BottomNav isAdmin={isAdmin} />
@@ -141,11 +144,19 @@ export default function App() {
   }
 
   if (isBevestiging && !sessie) {
-    return <BevestigingScreen onBevestigd={() => window.location.replace('/')} />;
+    return (
+      <Suspense fallback={null}>
+        <BevestigingScreen onBevestigd={() => window.location.replace('/')} />
+      </Suspense>
+    );
   }
 
   if (!sessie) {
-    return <LandingPage onLogin={setSessie} />;
+    return (
+      <Suspense fallback={null}>
+        <LandingPage onLogin={setSessie} />
+      </Suspense>
+    );
   }
 
   return (
