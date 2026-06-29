@@ -94,12 +94,15 @@ export function Stap8Resultaat() {
   const heeftVerplichtingen = (resultaat.maandlastenVerplichtingen ?? 0) > 0;
   const heeftPartner = situatie.metPartner;
 
+  // Enkelvoud / meervoud helper
+  const p = (enkel: string, meervoud: string) => heeftPartner ? meervoud : enkel;
+
   return (
     <div className="space-y-5">
 
       {/* Hoofduitkomst */}
       <div className="bg-[#0D1F3C] text-white rounded-2xl p-6 text-center">
-        <p className="text-sm text-white/60 mb-1">{adv ? 'Maximale hypotheek' : 'Jij kunt maximaal lenen'}</p>
+        <p className="text-sm text-white/60 mb-1">{adv ? 'Maximale hypotheek' : heeftPartner ? 'Jullie kunnen maximaal lenen' : 'Jij kunt maximaal lenen'}</p>
         <p className="text-4xl font-bold tracking-tight">{euro(adv ? effectieveMaxHypotheek : animatedMax)}</p>
         {energielabelBonus > 0 && (
           <p className="text-xs text-[#99248F] mt-1">Inclusief {euro(energielabelBonus)} energielabel bonus</p>
@@ -120,7 +123,7 @@ export function Stap8Resultaat() {
         )}
         {!adv && koopsom > 0 && (
           <p className="text-xs text-white/50 mt-3">
-            Op basis van jouw inkomen van {euro(toetsinkomen)} per jaar · normen 2026
+            Op basis van {heeftPartner ? 'jullie gezamenlijk' : 'jouw'} inkomen van {euro(toetsinkomen)} per jaar · normen 2026
           </p>
         )}
       </div>
@@ -194,12 +197,15 @@ export function Stap8Resultaat() {
         <Badge
           ok={nhgMogelijk}
           label={nhgMogelijk
-            ? (adv ? 'NHG van toepassing' : 'Goed nieuws: je hebt recht op NHG!')
+            ? (adv ? 'NHG van toepassing' : p('Goed nieuws: je hebt recht op NHG!', 'Goed nieuws: jullie hebben recht op NHG!'))
             : (adv ? 'Geen NHG' : 'NHG is niet van toepassing')}
           sub={nhgMogelijk
             ? (adv
                 ? `Premie: 0,6% van lening (${euro(bijkomendeKosten.nhgPremie)}). Lagere rente, achtervang bij betalingsproblemen.`
-                : `NHG staat voor Nationale Hypotheek Garantie. Voordelen: je krijgt een lagere rente (meestal 0,3–0,6% korting) en er is een vangnet als je de hypotheek niet meer kunt betalen door ontslag of scheiding.`)
+                : p(
+                    `NHG staat voor Nationale Hypotheek Garantie. Voordelen: je krijgt een lagere rente (meestal 0,3–0,6% korting) en er is een vangnet als je de hypotheek niet meer kunt betalen door ontslag of scheiding.`,
+                    `NHG staat voor Nationale Hypotheek Garantie. Voordelen: jullie krijgen een lagere rente (meestal 0,3–0,6% korting) en er is een vangnet als jullie de hypotheek niet meer kunnen betalen door ontslag of scheiding.`
+                  ))
             : koopsom === 0
               ? 'Vul een koopsom in om de NHG-check te doen'
               : (adv
@@ -210,12 +216,15 @@ export function Stap8Resultaat() {
           <Badge
             ok={startersvrijstelling}
             label={startersvrijstelling
-              ? (adv ? 'Startersvrijstelling van toepassing' : 'Je betaalt geen overdrachtsbelasting!')
+              ? (adv ? 'Startersvrijstelling van toepassing' : p('Je betaalt geen overdrachtsbelasting!', 'Jullie betalen geen overdrachtsbelasting!'))
               : (adv ? 'Geen startersvrijstelling' : 'Geen startersvrijstelling van toepassing')}
             sub={startersvrijstelling
               ? (adv
                   ? `Besparing: ${euro(koopsom * 0.02)} (2% van koopsom)`
-                  : `Dit scheelt je direct ${euro(koopsom * 0.02)}. Als starter betaal je 0% overdrachtsbelasting — dit is een cadeau van de overheid om het voor jou makkelijker te maken.`)
+                  : p(
+                      `Dit scheelt je direct ${euro(koopsom * 0.02)}. Als starter betaal je 0% overdrachtsbelasting — dit is een cadeau van de overheid om het voor jou makkelijker te maken.`,
+                      `Dit scheelt jullie direct ${euro(koopsom * 0.02)}. Als starters betalen jullie 0% overdrachtsbelasting — dit is een cadeau van de overheid.`
+                    ))
               : (adv
                   ? `Voldoet niet aan voorwaarden (leeftijd < 35, koopsom < ${euro(STARTER_GRENS_2026)})`
                   : `Voorwaarden: jonger dan 35 jaar én koopsom onder ${euro(STARTER_GRENS_2026)}.`)}
@@ -290,7 +299,7 @@ export function Stap8Resultaat() {
           {adv ? 'Berekeningsdetails' : 'Hoe is dit berekend? (klik voor uitleg)'}
         </summary>
         <div className="mt-3">
-          <Rij label={adv ? 'Toetsinkomen' : 'Jouw toetsinkomen'} waarde={euro(toetsinkomen)} sub={adv ? undefined : 'Bruto jaarsalaris inclusief vakantiegeld, bonus etc.'} />
+          <Rij label={adv ? 'Toetsinkomen' : p('Jouw toetsinkomen', 'Jullie toetsinkomen')} waarde={euro(toetsinkomen)} sub={adv ? undefined : p('Bruto jaarsalaris inclusief vakantiegeld, bonus etc.', 'Gecombineerd bruto jaarsalaris inclusief vakantiegeld, bonus etc.')} />
           {maandlastenVerplichtingen > 0 && (
             <Rij label={adv ? 'Maandlasten verplichtingen' : 'Bestaande maandlasten'} waarde={`${euro(maandlastenVerplichtingen)}/mnd`} sub={adv ? undefined : 'Leningen, lease etc. — verlagen je maximum'} />
           )}
@@ -326,7 +335,7 @@ export function Stap8Resultaat() {
                 return (
                   <tr key={s.periode} className={isHuidig ? 'bg-[#99248F]/5' : ''}>
                     <td className={`py-2.5 pr-2 font-medium ${isHuidig ? 'text-[#99248F]' : 'text-[#0D1F3C]'}`}>
-                      {s.periode}j {isHuidig && <span className="text-[10px] font-normal ml-1">(jouw keuze)</span>}
+                      {s.periode}j {isHuidig && <span className="text-[10px] font-normal ml-1">{p('(jouw keuze)', '(jullie keuze)')}</span>}
                     </td>
                     <td className="py-2.5 text-right text-gray-500">{(s.rente * 100).toFixed(1)}%</td>
                     <td className={`py-2.5 text-right font-semibold ${isHuidig ? 'text-[#99248F]' : 'text-gray-700'}`}>{euro(s.max)}</td>
@@ -439,7 +448,7 @@ export function Stap8Resultaat() {
           <p className="text-sm">
             {adv
               ? 'Er is een BKR-melding opgegeven. Dit kan de hypotheekaanvraag bemoeilijken. Bespreek dit met de klant.'
-              : 'Je hebt een BKR-melding. Dit kan het moeilijker maken om een hypotheek te krijgen. Niet het einde van de wereld — bespreek dit eerlijk met een adviseur.'}
+              : p('Je hebt een BKR-melding. Dit kan het moeilijker maken om een hypotheek te krijgen. Niet het einde van de wereld — bespreek dit eerlijk met een adviseur.', 'Er is een BKR-melding opgegeven. Dit kan het moeilijker maken om een hypotheek te krijgen — bespreek dit eerlijk met een adviseur.')}
           </p>
         </div>
       )}
@@ -453,7 +462,7 @@ export function Stap8Resultaat() {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Home className="w-4 h-4 text-[#99248F]" />
-                <p className="text-sm font-semibold text-[#0D1F3C]">Jouw woningen op Funda</p>
+                <p className="text-sm font-semibold text-[#0D1F3C]">{p('Jouw woningen op Funda', 'Jullie woningen op Funda')}</p>
               </div>
               <button type="button" onClick={() => setTab('woningen')} className="text-xs text-[#99248F] hover:underline cursor-pointer">
                 Alles zien →
@@ -554,7 +563,7 @@ export function Stap8Resultaat() {
           <div className="flex gap-2 p-4 bg-[#0D1F3C]/5 rounded-xl items-start">
             <ArrowRight className="w-4 h-4 text-[#99248F] shrink-0 mt-0.5" />
             <p className="text-xs text-gray-500">
-              <span className="font-medium text-[#0D1F3C]">Volgende stap:</span> Sla je berekening op via je profiel en deel hem met een hypotheekadviseur. Deze berekening is een indicatie — een adviseur kan precies uitzoeken wat in jouw situatie mogelijk is.
+              <span className="font-medium text-[#0D1F3C]">Volgende stap:</span> Sla {p('je', 'jullie')} berekening op via {p('je', 'jullie')} profiel en deel hem met een hypotheekadviseur. Deze berekening is een indicatie — een adviseur kan precies uitzoeken wat in {p('jouw', 'jullie')} situatie mogelijk is.
             </p>
           </div>
         )}
