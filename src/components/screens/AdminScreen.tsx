@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings, Users, TrendingUp, ShieldCheck, Save, RefreshCw, ExternalLink, Home } from 'lucide-react';
+import { Settings, Users, TrendingUp, ShieldCheck, Save, RefreshCw, ExternalLink, Home, GitMerge, CheckCircle2, Clock } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Button } from '../ui/Button';
 import { NHG_GRENS_2026, STARTER_GRENS_2026 } from '../../lib/normen';
@@ -32,7 +32,7 @@ export function AdminScreen() {
   const [bewerkt, setBewerkt]       = useState<Record<number, string>>({});
   const [opslaan, setOpslaan]       = useState(false);
   const [bericht, setBericht]       = useState('');
-  const [actieveTab, setActieveTab] = useState<'dashboard' | 'rentes' | 'gebruikers'>('dashboard');
+  const [actieveTab, setActieveTab] = useState<'dashboard' | 'rentes' | 'gebruikers' | 'versies'>('dashboard');
 
   // Gebruikers logboek
   const [logboek, setLogboek]       = useState<GebruikerRij[]>([]);
@@ -102,6 +102,7 @@ export function AdminScreen() {
           ['dashboard',  'Dashboard'],
           ['rentes',     'Rentestand'],
           ['gebruikers', 'Gebruikers'],
+          ['versies',    'Versies'],
         ] as const).map(([tab, label]) => (
           <button key={tab} type="button" onClick={() => setActieveTab(tab)}
             className={`flex-1 py-2 rounded-lg text-xs font-medium transition cursor-pointer
@@ -235,6 +236,179 @@ export function AdminScreen() {
           )}
         </div>
       )}
+      {/* Versies changelog */}
+      {actieveTab === 'versies' && <VersiesTab />}
+    </div>
+  );
+}
+
+interface Release {
+  versie: string;
+  datum: string;
+  label?: string;
+  items: { tekst: string; nieuw?: boolean }[];
+}
+
+const RELEASES: Release[] = [
+  {
+    versie: '1.0',
+    datum: '29 jun 2026',
+    label: 'Huidige versie',
+    items: [
+      { tekst: 'Wizard state + loonstrook resultaat gecacht in Supabase', nieuw: true },
+      { tekst: 'Funda AI-analyse gecacht per woning — geen dubbele API-calls', nieuw: true },
+      { tekst: 'Analyse terug te zien op opgeslagen woningkaartjes', nieuw: true },
+      { tekst: 'Admin changelog / versie-overzicht', nieuw: true },
+    ],
+  },
+  {
+    versie: '0.9',
+    datum: '28 jun 2026',
+    items: [
+      { tekst: 'AOW-leeftijdbeperking: looptijd gecapped op 67 − leeftijd' },
+      { tekst: '"Wist je dat..." voordelen op resultatenpagina (energielabel, studieschuld, nieuwbouw, NHG)' },
+      { tekst: 'Gebruikers logboek in admin panel via service role endpoint' },
+      { tekst: 'Loonstrook: betere detectie 13e maand, EJU, vakantiegeld' },
+    ],
+  },
+  {
+    versie: '0.8',
+    datum: '27 jun 2026',
+    items: [
+      { tekst: 'Supabase database: profielen + woningen tabellen met RLS' },
+      { tekst: 'Volledige async migratie van localStorage naar Supabase' },
+      { tekst: 'Admin panel: dashboard, rentestand beheer, gebruikers' },
+      { tekst: 'ConsumentenZaken exacte merkkleuren (#99248F, #619C30, #3094C6)' },
+      { tekst: 'Privacy tekst eerlijk over gegevensopslag in account' },
+    ],
+  },
+  {
+    versie: '0.7',
+    datum: '26 jun 2026',
+    items: [
+      { tekst: 'WOZ analyser: adreszoeker + BAG/EP-online integratie' },
+      { tekst: 'Funda URL parser + AI woninganalyse (Claude)' },
+      { tekst: 'Huispedia verkoophistorie per woning' },
+      { tekst: 'Biedadvies op basis van WOZ vs vraagprijs' },
+      { tekst: 'Loonstrook AI-analyse via Claude (bruto, vakantiegeld, 13e maand)' },
+    ],
+  },
+  {
+    versie: '0.6',
+    datum: '25 jun 2026',
+    items: [
+      { tekst: 'Supabase Auth: inloggen, registreren, e-mailbevestiging' },
+      { tekst: 'Profielpagina met opgeslagen berekening en woningen' },
+      { tekst: 'Dynamische rentes en LTI-normen vanuit Supabase database' },
+      { tekst: 'Rentestand bewerken in admin panel' },
+    ],
+  },
+  {
+    versie: '0.5',
+    datum: '24 jun 2026',
+    items: [
+      { tekst: 'NHG 2026 sneltoets (grens €470k, premie 0,6%)' },
+      { tekst: 'Energielabel bonus (TRHK 2026, max €40k voor A++++)' },
+      { tekst: 'Studieschuld: GHF berekening oud/nieuw stelsel' },
+      { tekst: 'Bijkomende kosten: overdrachtsbelasting, notaris, taxatie, advies' },
+      { tekst: 'Startersvrijstelling overdrachtsbelasting (< 35 jaar, < €525k)' },
+    ],
+  },
+  {
+    versie: '0.4',
+    datum: '23 jun 2026',
+    items: [
+      { tekst: 'Scenario vergelijker: 10/15/20/30 jaar rentevast' },
+      { tekst: 'Hypotheekvorm keuze: annuïtair, lineair, aflossingsvrij' },
+      { tekst: 'Netto maandlast berekening met HRA en EWF' },
+      { tekst: 'ZZP-inkomen: gemiddelde 3 jaar winst' },
+    ],
+  },
+  {
+    versie: '0.3',
+    datum: '22 jun 2026',
+    items: [
+      { tekst: 'Consument vs Adviseur modus (verschillende taal + detailniveau)' },
+      { tekst: 'Partner inkomen (stap 4 conditioneel)' },
+      { tekst: 'ORT, jaarbonus, alimentatie als extra inkomen' },
+    ],
+  },
+  {
+    versie: '0.1',
+    datum: '21 jun 2026',
+    items: [
+      { tekst: 'Wizard: 8 stappen van situatie tot resultaat' },
+      { tekst: 'Nibud LTI-normen 2026 + AFM toetsrente' },
+      { tekst: 'Maximale hypotheek op inkomen + LTV-grens' },
+      { tekst: 'Annuïtaire maandlast berekening' },
+    ],
+  },
+];
+
+const ROADMAP = [
+  'Vergelijken van meerdere berekeningen naast elkaar',
+  'PDF rapport exporteren voor de adviseur',
+  'Notificatie als woning van prijs verandert',
+  'Nieuwbouw configurator (erfpacht, VvE, stelpost)',
+  'Koppeling met hypotheekverstrekkers (oriëntatie)',
+];
+
+function VersiesTab() {
+  return (
+    <div className="space-y-6">
+      {/* Roadmap */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Clock className="w-4 h-4 text-[#99248F]" />
+          <p className="text-sm font-semibold text-[#0D1F3C]">Binnenkort</p>
+        </div>
+        <ul className="space-y-2">
+          {ROADMAP.map((item, i) => (
+            <li key={i} className="flex items-start gap-2 text-xs text-gray-500">
+              <span className="w-1.5 h-1.5 rounded-full bg-gray-300 mt-1.5 shrink-0" />
+              {item}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Releases */}
+      <div className="relative">
+        <div className="absolute left-[11px] top-0 bottom-0 w-px bg-gray-100" />
+        <div className="space-y-6">
+          {RELEASES.map(release => (
+            <div key={release.versie} className="relative flex gap-4">
+              <div className={`w-6 h-6 rounded-full border-2 shrink-0 flex items-center justify-center z-10
+                ${release.label ? 'bg-[#99248F] border-[#99248F]' : 'bg-white border-gray-200'}`}>
+                {release.label
+                  ? <GitMerge className="w-3 h-3 text-white" />
+                  : <CheckCircle2 className="w-3 h-3 text-gray-300" />
+                }
+              </div>
+              <div className="flex-1 pb-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full
+                    ${release.label ? 'bg-[#99248F] text-white' : 'bg-gray-100 text-gray-600'}`}>
+                    v{release.versie}
+                  </span>
+                  <span className="text-xs text-gray-400">{release.datum}</span>
+                  {release.label && (
+                    <span className="text-xs text-[#99248F] font-medium">{release.label}</span>
+                  )}
+                </div>
+                <ul className="space-y-1.5">
+                  {release.items.map((item, i) => (
+                    <li key={i} className="flex items-start gap-2 text-xs text-gray-600">
+                      <CheckCircle2 className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${item.nieuw ? 'text-[#619C30]' : 'text-gray-300'}`} />
+                      {item.tekst}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

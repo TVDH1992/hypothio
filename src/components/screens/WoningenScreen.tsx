@@ -14,7 +14,7 @@ import {
   laadWoningen, voegWoningToe, verwijderWoning,
   parseFundaUrl, laadProfiel,
 } from '../../lib/profiel';
-import type { GeslaagdeWoning } from '../../types/profiel';
+import type { GeslaagdeWoning, FundaAnalyse, FundaDetails, HuispediaData } from '../../types/profiel';
 
 function euro(n: number) {
   return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
@@ -53,26 +53,10 @@ export function WoningenScreen() {
   const [fundaAnalyseLaden, setFundaAnalyseLaden] = useState(false);
   const [fundaAnalyseFout, setFundaAnalyseFout] = useState('');
   const [fundaGevonden, setFundaGevonden] = useState<{ adres: string; stad: string; type?: string } | null>(null);
-  const [fundaDetails, setFundaDetails] = useState<{
-    prijs?: number; oppervlakte?: number; bouwjaar?: number;
-    kamers?: number; slaapkamers?: number; energielabel?: string; isNieuwbouw?: boolean; prijstype?: string;
-  } | null>(null);
-  const [fundaAnalyse, setFundaAnalyse] = useState<{
-    marktwaarde: number;
-    biedadvies: string;
-    vraagprijsOordeel: string;
-    kostenKoper?: number;
-    aandachtspunten: string[];
-    pluspunten: string[];
-    samenvatting: string;
-  } | null>(null);
-  const [huispediaData, setHuispediaData] = useState<{
-    transacties?: { datum: string; bedrag: number }[];
-    laasteVerkoopJaar?: number;
-    laasteVerkoopPrijs?: number;
-    jarenInBezit?: number;
-    eigenaarSinds?: string;
-  } | null>(null);
+  const [fundaDetails, setFundaDetails] = useState<FundaDetails | null>(null);
+  const [fundaAnalyse, setFundaAnalyse] = useState<FundaAnalyse | null>(null);
+  const [huispediaData, setHuispediaData] = useState<HuispediaData | null>(null);
+  const [uitgebreid, setUitgebreid] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     async function laad() {
@@ -239,6 +223,7 @@ export function WoningenScreen() {
       stad: parsed.stad,
       vraagprijs: prijs,
       marktwaarde: fundaAnalyse?.marktwaarde,
+      analyseData: fundaAnalyse ? { fundaAnalyse, fundaDetails, huispediaData } : undefined,
     });
     if (nieuw) setWoningen(prev => [nieuw, ...prev]);
     setFundaUrl(''); setFundaPrijs(''); setFundaFout('');
@@ -652,6 +637,72 @@ export function WoningenScreen() {
                     </button>
                   </div>
                 </div>
+
+                {/* Gecachede analyse */}
+                {w.analyseData?.fundaAnalyse && (
+                  <div className="mt-3 pt-3 border-t border-gray-50">
+                    <button type="button"
+                      onClick={() => setUitgebreid(prev => ({ ...prev, [w.id]: !prev[w.id] }))}
+                      className="text-xs text-[#99248F] hover:opacity-75 transition cursor-pointer flex items-center gap-1">
+                      {uitgebreid[w.id] ? '▲ Minder' : '▼ Analyse bekijken'}
+                    </button>
+                    {uitgebreid[w.id] && (
+                      <div className="mt-3 space-y-2">
+                        {w.analyseData.fundaDetails && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {w.analyseData.fundaDetails.oppervlakte && (
+                              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-lg">{w.analyseData.fundaDetails.oppervlakte} m²</span>
+                            )}
+                            {w.analyseData.fundaDetails.bouwjaar && (
+                              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-lg">Bouwjaar {w.analyseData.fundaDetails.bouwjaar}</span>
+                            )}
+                            {w.analyseData.fundaDetails.energielabel && (
+                              <span className={`text-xs px-2 py-0.5 rounded-lg font-semibold ${
+                                ['A+++','A++','A+','A'].includes(w.analyseData.fundaDetails.energielabel) ? 'bg-emerald-100 text-emerald-700' :
+                                w.analyseData.fundaDetails.energielabel === 'B' ? 'bg-lime-100 text-lime-700' :
+                                w.analyseData.fundaDetails.energielabel === 'C' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-red-100 text-red-700'}`}>
+                                Label {w.analyseData.fundaDetails.energielabel}
+                              </span>
+                            )}
+                            {w.analyseData.fundaDetails.isNieuwbouw && (
+                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-lg font-semibold">Nieuwbouw</span>
+                            )}
+                          </div>
+                        )}
+                        {w.analyseData.fundaAnalyse.pluspunten?.length > 0 && (
+                          <div className="bg-emerald-50 rounded-lg p-2.5">
+                            <ul className="space-y-0.5">
+                              {w.analyseData.fundaAnalyse.pluspunten.map((p, i) => (
+                                <li key={i} className="text-xs text-emerald-700 flex gap-1.5">
+                                  <CheckCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />{p}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {w.analyseData.fundaAnalyse.aandachtspunten?.length > 0 && (
+                          <div className="bg-amber-50 rounded-lg p-2.5">
+                            <ul className="space-y-0.5">
+                              {w.analyseData.fundaAnalyse.aandachtspunten.map((p, i) => (
+                                <li key={i} className="text-xs text-amber-700 flex gap-1.5">
+                                  <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />{p}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        <p className="text-xs text-gray-500 italic">{w.analyseData.fundaAnalyse.samenvatting}</p>
+                        {w.analyseData.huispediaData?.laasteVerkoopJaar && (
+                          <p className="text-xs text-gray-400">
+                            Laatste verkoop: {euro(w.analyseData.huispediaData.laasteVerkoopPrijs!)} ({w.analyseData.huispediaData.laasteVerkoopJaar})
+                            {w.analyseData.huispediaData.jarenInBezit !== undefined && ` · ~${w.analyseData.huispediaData.jarenInBezit} jaar in bezit`}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}

@@ -3,6 +3,7 @@ import type { SituatieData, InkomenData, VerplichtingenData, WoningData, Resulta
 import type { Sessie } from '../types/profiel';
 import { haalActueleRentes, haalActueleNormen, type RenteTabel } from '../lib/rentes';
 import { TOETSRENTES, LTI_NORMEN, type LtiRij } from '../lib/normen';
+import { laadProfiel } from '../lib/profiel';
 
 export type Rol = 'consument' | 'adviseur';
 
@@ -66,6 +67,16 @@ export function WizardProvider({ children, sessie }: { children: ReactNode; sess
   useEffect(() => {
     haalActueleRentes().then(setActueleRentes).catch(() => {});
     haalActueleNormen().then(setActueleNormen).catch(() => {});
+    laadProfiel().then(profiel => {
+      if (!profiel?.wizardInvoer) return;
+      const { situatie: s, inkomen1: i1, inkomen2: i2, verplichtingen: v, woning: w } = profiel.wizardInvoer;
+      setSituatie({ ...s });
+      setInkomen1({ ...defaultInkomen, ...i1 });
+      setInkomen2({ ...defaultInkomen, ...i2 });
+      setVerplichtingen({ ...defaultVerplichtingen, ...v });
+      setWoning({ ...defaultWoning, ...w });
+      if (profiel.resultaat) setResultaat(profiel.resultaat);
+    }).catch(() => {});
   }, []);
 
   const volgende = () =>

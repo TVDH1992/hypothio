@@ -14,7 +14,7 @@ function euro(n: number) {
 }
 
 export function ProfielView() {
-  const { resultaat, sessie, setStap } = useWizard();
+  const { resultaat, sessie, setStap, situatie, inkomen1, inkomen2, verplichtingen, woning } = useWizard();
   const [profiel, setProfiel] = useState<Profiel | null>(null);
   const [woningen, setWoningen] = useState<GeslaagdeWoning[]>([]);
   const [fundaUrl, setFundaUrl] = useState('');
@@ -43,6 +43,7 @@ export function ProfielView() {
         aangemaakt: new Date().toLocaleDateString('nl-NL'),
         maxHypotheek: resultaat.effectieveMaxHypotheek,
         resultaat,
+        wizardInvoer: { situatie, inkomen1, inkomen2, verplichtingen, woning },
       };
       slaProfielOp(nieuw);
       setProfiel(nieuw);

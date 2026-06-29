@@ -40,6 +40,7 @@ export async function laadProfiel(): Promise<Profiel | null> {
     aangemaakt: new Date(data.aangemaakt_op).toLocaleDateString('nl-NL'),
     maxHypotheek: data.max_hypotheek,
     resultaat: data.resultaat,
+    wizardInvoer: data.wizard_invoer ?? undefined,
   };
 }
 
@@ -52,6 +53,7 @@ export async function slaProfielOp(profiel: Profiel): Promise<void> {
     naam: profiel.naam,
     max_hypotheek: profiel.maxHypotheek,
     resultaat: profiel.resultaat,
+    wizard_invoer: profiel.wizardInvoer ?? null,
     bijgewerkt_op: new Date().toISOString(),
   }, { onConflict: 'user_id' });
 }
@@ -88,6 +90,7 @@ export async function laadWoningen(): Promise<GeslaagdeWoning[]> {
     vraagprijs: w.vraagprijs,
     marktwaarde: w.marktwaarde ?? undefined,
     toegevoegd: new Date(w.toegevoegd_op).toLocaleDateString('nl-NL'),
+    analyseData: w.analyse_data ?? undefined,
   }));
 }
 
@@ -102,6 +105,7 @@ export async function voegWoningToe(woning: Omit<GeslaagdeWoning, 'id' | 'toegev
     stad: woning.stad,
     vraagprijs: woning.vraagprijs,
     marktwaarde: woning.marktwaarde ?? null,
+    analyse_data: woning.analyseData ?? null,
   }).select().single();
 
   if (!data) return null;
