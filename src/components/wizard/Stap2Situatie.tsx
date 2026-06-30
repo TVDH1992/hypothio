@@ -54,6 +54,20 @@ export function Stap2Situatie() {
         onChange={e => updateSituatie({ leeftijd: Number(e.target.value) })}
       />
 
+      {situatie.metPartner && (
+        <FormField
+          label="Leeftijd partner"
+          tooltip="Bepaalt of je partner recht heeft op de startersvrijstelling (onder de 35). Invloed op overdrachtsbelasting."
+          type="number"
+          min={18}
+          max={99}
+          placeholder="bijv. 31"
+          suffix="jaar"
+          value={situatie.partnerLeeftijd ?? ''}
+          onChange={e => updateSituatie({ partnerLeeftijd: e.target.value ? Number(e.target.value) : undefined })}
+        />
+      )}
+
       <div className="flex gap-3 pt-2">
         <Button variant="ghost" onClick={vorige}>← Terug</Button>
         <Button onClick={volgende} disabled={!isValid} className="flex-1">Volgende →</Button>

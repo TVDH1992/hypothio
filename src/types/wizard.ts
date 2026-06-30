@@ -43,6 +43,7 @@ export interface SituatieData {
   metPartner: boolean;
   isStarter: boolean;
   leeftijd: number;
+  partnerLeeftijd?: number;
 }
 
 export interface BijkomendeKosten {

@@ -149,8 +149,25 @@ export function berekenResultaat(
   const ewfMaand          = koopsom * 0.0035 / 12;
   const nettoMaandlast    = brutoMaandlast - belastingvoordeel + ewfMaand * belastingtarief;
 
-  // Bijkomende kosten
-  const overdracht = startersvrijstelling ? 0 : koopsom * 0.02;
+  // Bijkomende kosten — pro-rata OVB per persoon (50/50 aandeel bij koppel)
+  let overdracht: number;
+  if (koopsom === 0) {
+    overdracht = 0;
+  } else if (!situatie.metPartner) {
+    overdracht = startersvrijstelling ? 0 : koopsom * 0.02;
+  } else {
+    const helft = koopsom * 0.5;
+    const ovbAanvrager = startersvrijstelling ? 0 : helft * 0.02;
+    const partnerLeeftijd = situatie.partnerLeeftijd;
+    const partnerVrijstelling =
+      situatie.isStarter === true &&
+      koopsom < STARTER_GRENS_2026 &&
+      partnerLeeftijd !== undefined &&
+      partnerLeeftijd >= 18 &&
+      partnerLeeftijd < STARTER_MAX_LEEFTIJD;
+    const ovbPartner = partnerVrijstelling ? 0 : helft * 0.02;
+    overdracht = ovbAanvrager + ovbPartner;
+  }
   const nhgPremie  = nhgMogelijk ? effectiefMax * NHG_PREMIE : 0;
   const notaris    = 2_250;
   const taxatie    = 700;
