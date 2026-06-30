@@ -1,6 +1,6 @@
-﻿import { useState, useEffect, lazy, Suspense } from 'react';
+﻿import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { WizardProvider, useWizard } from './context/WizardContext';
-import { AppProvider, useApp } from './context/AppContext';
+import { AppProvider, useApp, type Tab } from './context/AppContext';
 import { supabase } from './lib/supabase';
 import { ProgressBar } from './components/ui/ProgressBar';
 import { BottomNav } from './components/nav/BottomNav';
@@ -28,11 +28,38 @@ const STAP_LABELS: Record<number, string> = {
 };
 
 function AppShell({ sessie, onUitloggen }: { sessie: Sessie; onUitloggen: () => void }) {
-  const { stap } = useWizard();
-  const { tab } = useApp();
+  const { stap, setStap } = useWizard();
+  const { tab, setTab } = useApp();
   const isAdmin = sessie.rol === 'admin';
   const toonVoortgang = tab === 'berekenen' && stap > 1 && stap < 8;
   const stapLabel = STAP_LABELS[stap];
+
+  // Elke scherm-wissel (tab of wizardstap) wordt een eigen history-entry,
+  // zodat de browser/muis-terugknop binnen de app navigeert i.p.v. de app te verlaten.
+  const isEersteRender = useRef(true);
+  const komtVanPopstate = useRef(false);
+
+  useEffect(() => {
+    history.replaceState({ tab, stap }, '');
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (isEersteRender.current) { isEersteRender.current = false; return; }
+    if (komtVanPopstate.current) { komtVanPopstate.current = false; return; }
+    history.pushState({ tab, stap }, '');
+  }, [tab, stap]);
+
+  useEffect(() => {
+    const handler = (e: PopStateEvent) => {
+      const state = e.state as { tab?: Tab; stap?: number } | null;
+      if (!state) return;
+      komtVanPopstate.current = true;
+      if (state.tab) setTab(state.tab);
+      if (typeof state.stap === 'number') setStap(state.stap);
+    };
+    window.addEventListener('popstate', handler);
+    return () => window.removeEventListener('popstate', handler);
+  }, [setTab, setStap]);
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Inter', sans-serif" }}>

@@ -95,28 +95,13 @@ export function WizardProvider({ children, sessie }: { children: ReactNode; sess
   }, []);
 
   const volgende = () =>
-    setStap(s => {
-      const nieuw = s === 3 && !situatie.metPartner ? 5 : Math.min(s + 1, 8);
-      history.pushState({ stap: nieuw }, '');
-      return nieuw;
-    });
+    setStap(s => (s === 3 && !situatie.metPartner ? 5 : Math.min(s + 1, 8)));
 
   const vorige = () =>
     setStap(s => {
       if (s === 5 && !situatie.metPartner) return 3;
       return Math.max(s - 1, 0);
     });
-
-  useEffect(() => {
-    const handler = (e: PopStateEvent) => {
-      const stap = e.state?.stap;
-      if (typeof stap === 'number') {
-        setStap(s => Math.max(s - 1, 0));
-      }
-    };
-    window.addEventListener('popstate', handler);
-    return () => window.removeEventListener('popstate', handler);
-  }, []);
 
   return (
     <WizardContext.Provider value={{
