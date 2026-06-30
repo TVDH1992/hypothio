@@ -33,6 +33,7 @@ export function DashboardScreen() {
   const [woningen, setWoningen]             = useState<GeslaagdeWoning[]>([]);
   const [berekeningen, setBerekeningen]     = useState<Berekening[]>([]);
   const [kostenUitgeklapt, setKostenUitgeklapt] = useState(false);
+  const [sliderEigenGeld, setSliderEigenGeld] = useState(woning.eigenGeld ?? 0);
 
   useEffect(() => {
     Promise.all([laadWoningen(), laadBerekeningen()]).then(([w, b]) => {
@@ -221,6 +222,48 @@ export function DashboardScreen() {
           </div>
         )}
       </div>
+
+      {/* ── Eigen geld slider ── */}
+      {(() => {
+        const koopbudget = Math.max(0,
+          resultaat.effectieveMaxHypotheek + sliderEigenGeld - resultaat.bijkomendeKosten.totaal
+        );
+        const extra = sliderEigenGeld - (woning.eigenGeld ?? 0);
+        return (
+          <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-[#0D1F3C]">Eigen geld</p>
+              <span className="text-sm font-bold text-[#99248F]">{euro(sliderEigenGeld)}</span>
+            </div>
+
+            <input
+              type="range"
+              min={0}
+              max={200000}
+              step={5000}
+              value={sliderEigenGeld}
+              onChange={e => setSliderEigenGeld(Number(e.target.value))}
+              className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
+              style={{ accentColor: '#99248F' }}
+            />
+
+            <div className="flex items-center justify-between border-t border-gray-50 pt-3">
+              <div>
+                <p className="text-[10px] text-gray-400 uppercase tracking-widest">Totaal koopbudget</p>
+                <p className="text-xl font-bold text-[#0D1F3C]">{euro(koopbudget)}</p>
+              </div>
+              {extra > 0 && (
+                <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg">
+                  +{euro(extra)}
+                </span>
+              )}
+            </div>
+            <p className="text-[10px] text-gray-300">
+              {euro(resultaat.effectieveMaxHypotheek)} hypotheek + {euro(sliderEigenGeld)} eigen geld − {euro(resultaat.bijkomendeKosten.totaal)} bijkomende kosten
+            </p>
+          </div>
+        );
+      })()}
 
       {/* ── Woningen ── */}
       {woningen.length > 0 && (

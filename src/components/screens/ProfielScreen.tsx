@@ -1,9 +1,10 @@
 ﻿import { useRef, useState } from 'react';
-import { RotateCcw, LogOut, Calculator, Upload, CheckCircle, Loader2, Users } from 'lucide-react';
+import { RotateCcw, LogOut, Calculator, Upload, CheckCircle, Loader2, Users, Pencil, X, Check } from 'lucide-react';
 import { useWizard } from '../../context/WizardContext';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../ui/Button';
 import { verwijderProfiel } from '../../lib/profiel';
+import { supabase } from '../../lib/supabase';
 
 type UploadStatus = 'idle' | 'laden' | 'succes' | 'fout';
 
@@ -101,6 +102,18 @@ export function ProfielScreen({ onUitloggen }: Props) {
   const { setTab } = useApp();
   const [salaris1, setSalaris1] = useState<number | null>(null);
   const [salaris2, setSalaris2] = useState<number | null>(null);
+  const [bewerkNaam, setBewerkNaam] = useState(false);
+  const [nieuweNaam, setNieuweNaam] = useState(sessie.naam);
+  const [naamLaden, setNaamLaden] = useState(false);
+
+  async function slaaNaamOp() {
+    const naam = nieuweNaam.trim();
+    if (!naam || naam === sessie.naam) { setBewerkNaam(false); return; }
+    setNaamLaden(true);
+    await supabase.auth.updateUser({ data: { naam } });
+    setNaamLaden(false);
+    setBewerkNaam(false);
+  }
 
   function startMetLoonstroken() {
     if (salaris1) updateInkomen1({ brutoSalaris: salaris1 });
@@ -123,9 +136,37 @@ export function ProfielScreen({ onUitloggen }: Props) {
           <div className="w-12 h-12 bg-[#0D1F3C] rounded-full flex items-center justify-center shrink-0">
             <span className="text-white text-lg font-bold">{sessie.naam.charAt(0).toUpperCase()}</span>
           </div>
-          <div>
-            <p className="font-semibold text-[#0D1F3C]">{sessie.naam}</p>
-            <p className="text-xs text-gray-400">{sessie.email}</p>
+          <div className="flex-1 min-w-0">
+            {bewerkNaam ? (
+              <div className="flex items-center gap-2">
+                <input
+                  autoFocus
+                  type="text"
+                  value={nieuweNaam}
+                  onChange={e => setNieuweNaam(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') slaaNaamOp(); if (e.key === 'Escape') setBewerkNaam(false); }}
+                  className="flex-1 text-sm font-semibold text-[#0D1F3C] border-b border-[#99248F] outline-none bg-transparent pb-0.5"
+                  placeholder="Jouw naam"
+                />
+                <button type="button" onClick={slaaNaamOp} disabled={naamLaden}
+                  className="text-emerald-500 hover:text-emerald-600 cursor-pointer transition">
+                  {naamLaden ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                </button>
+                <button type="button" onClick={() => { setBewerkNaam(false); setNieuweNaam(sessie.naam); }}
+                  className="text-gray-400 hover:text-gray-600 cursor-pointer transition">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <p className="font-semibold text-[#0D1F3C] truncate">{sessie.naam}</p>
+                <button type="button" onClick={() => setBewerkNaam(true)}
+                  className="text-gray-300 hover:text-[#99248F] cursor-pointer transition shrink-0">
+                  <Pencil className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+            <p className="text-xs text-gray-400 truncate">{sessie.email}</p>
           </div>
         </div>
       </div>

@@ -257,13 +257,22 @@ interface Release {
 
 const RELEASES: Release[] = [
   {
-    versie: '1.3',
+    versie: '1.4',
     datum: '30 jun 2026',
     label: 'Huidige versie',
     items: [
-      { tekst: 'Dashboard als aparte tab — landing + volledig dashboard in één scherm', nieuw: true },
-      { tekst: 'Dashboard upgrade: gradiënt hero, initialen avatar, status-badges, uitklapbare bijkomende kosten', nieuw: true },
-      { tekst: 'Woningen: budget-banner, gekleurde topbalk per kaart, visuele budget-balk, betere lege staat', nieuw: true },
+      { tekst: 'Eigen geld slider op dashboard: live koopbudget = hypotheek + eigen geld − bijkomende kosten', nieuw: true },
+      { tekst: 'Naam instellen in Profiel: bewerkbaar via potloodknop, opgeslagen in Supabase account', nieuw: true },
+      { tekst: 'Jij/jullie tekst op resultaatpagina: volledig correct voor aanvragen met of zonder partner', nieuw: true },
+    ],
+  },
+  {
+    versie: '1.3',
+    datum: '30 jun 2026',
+    items: [
+      { tekst: 'Dashboard als aparte tab — landing + volledig dashboard in één scherm' },
+      { tekst: 'Dashboard upgrade: gradiënt hero, initialen avatar, status-badges, uitklapbare bijkomende kosten' },
+      { tekst: 'Woningen: budget-banner, gekleurde topbalk per kaart, visuele budget-balk, betere lege staat' },
     ],
   },
   {

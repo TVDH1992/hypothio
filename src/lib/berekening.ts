@@ -1,7 +1,8 @@
 import {
   LTI_NORMEN, LtiRij, TOETSRENTES, NHG_GRENS_2026, NHG_PREMIE,
   STARTER_GRENS_2026, STARTER_MAX_LEEFTIJD, MAX_LTV,
-  ENERGIELABEL_BONUS, BELASTING_LAAG,
+  ENERGIELABEL_BONUS, BELASTING_LAAG, AFM_TOETSRENTE,
+  ALLEENSTAANDEN_OPSLAG, ALLEENSTAANDEN_DREMPEL,
 } from './normen';
 import type { InkomenData, VerplichtingenData, WoningData, SituatieData, Resultaat } from '../types/wizard';
 
@@ -78,7 +79,8 @@ export function berekenResultaat(
   const maandlasten = berekenMaandlasten(verplichtingen);
 
   const periode = woning.rentevastePeriode ?? 10;
-  const toetsrente = rentes[periode] ?? rentes[10] ?? TOETSRENTES[10]!;
+  const rawRente = rentes[periode] ?? rentes[10] ?? TOETSRENTES[10]!;
+  const toetsrente = periode < 10 ? Math.max(rawRente, AFM_TOETSRENTE) : rawRente;
   const looptijdJaar = woning.looptijdJaar ?? 30;
 
   const ltiFactor  = getLtiFactor(toetsinkomen, ltiNormen);
@@ -100,6 +102,12 @@ export function berekenResultaat(
   const maxOpWoning = koopsom * MAX_LTV;
   const baseMax = koopsom > 0 ? Math.min(maxOpInkomen, maxOpWoning) : maxOpInkomen;
   let effectiefMax = baseMax + energielabelBonus;
+
+  // Alleenstaanden-correctie (Nibud 2026): +€17.000 bij geen partner en inkomen ≥ €30.000
+  if (!situatie.metPartner && toetsinkomen >= ALLEENSTAANDEN_DREMPEL) {
+    effectiefMax += ALLEENSTAANDEN_OPSLAG;
+    if (koopsom > 0) effectiefMax = Math.min(effectiefMax, koopsom * MAX_LTV);
+  }
 
   const hypotheekvorm = woning.hypotheekvorm ?? 'annuitair';
 

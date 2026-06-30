@@ -52,6 +52,10 @@ export const ENERGIELABEL_BONUS: Partial<Record<string, number>> = {
   'A+':    10_000,
 };
 
+// Nibud 2026 alleenstaanden-correctie
+export const ALLEENSTAANDEN_OPSLAG   = 17_000;
+export const ALLEENSTAANDEN_DREMPEL  = 30_000;
+
 export const BELASTING_LAAG  = 0.3748;   // Schijf 2 tarief 2026 (ook max. aftrekpercentage)
 export const BELASTING_HOOG  = 0.495;    // Schijf 3 tarief 2026
 export const BELASTING_GRENS = 76_817;   // Grens schijf 2/3 in 2026

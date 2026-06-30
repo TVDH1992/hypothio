@@ -1,7 +1,7 @@
 # Hypothio — Planning & Voortgang
 
 > Gebouwd door Van der Hel Design · vanderheldesign.nl  
-> Bijgewerkt: 30 juni 2026
+> Bijgewerkt: 30 juni 2026 (v1.4)
 
 ---
 
@@ -10,13 +10,13 @@
 | Fase | Status | Doel |
 |------|--------|------|
 | Fase 1 — MVP | ✅ Live | Werkende tool op hypothio.nl via ConsumentenZaken |
-| Fase 2 — UX verdieping | 🟡 In uitvoering | Dashboard, eigen geld, PDF, naam fix |
+| Fase 2 — UX verdieping | 🟡 In uitvoering | Eigen geld slider ✅, naam fix ✅, jij/jullie ✅ |
 | Fase 3 — Verrijking | ⬜ Gepland | ZZP uitbreiding, adviseursprofiel, deelbare links |
 | Fase 4 — SaaS | ⬜ Gepland | Abonnementen, embed widget, Chrome Extension |
 
 ---
 
-## Wat er nu live staat (v1.3 — 30 jun 2026)
+## Wat er nu live staat (v1.4 — 30 jun 2026)
 
 ### Core berekening
 - [x] Rekenmodule conform Nibud 2026 + AFM toetsrente
@@ -85,9 +85,9 @@
 ## Fase 2 — UX verdieping (lopend)
 
 ### Hoog prioriteit
-- [ ] **Eigen geld slider** — live preview op dashboard/resultaat: "Als je €X meer inlegt → €Y meer budget"
-- [ ] **Naam fix** — display naam instellen in Profiel (nu email-prefix als fallback)
-- [ ] **Budget gap visualisatie** — balk die toont hoe ver woning van budget zit
+- [x] **Eigen geld slider** — live koopbudget op dashboard: hypotheek + eigen geld − bijkomende kosten
+- [x] **Naam fix** — weergavenaam bewerkbaar in Profiel via potloodknop, opgeslagen in Supabase auth
+- [ ] **Budget gap visualisatie** — balk die toont hoe ver woning van budget zit (al deels in Woningen-kaart)
 
 ### Midden prioriteit
 - [ ] **Eigen geld slider op Stap 6** — live herberekening tijdens invullen
