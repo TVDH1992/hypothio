@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react';
-import { FileText, RefreshCw, Users, User, ShieldCheck, Sparkles, Plus, Home, ChevronRight } from 'lucide-react';
+import {
+  FileText, RefreshCw, Users, User, ShieldCheck, Sparkles, Plus, Home,
+  ChevronRight, Gavel, TrendingUp, PartyPopper,
+} from 'lucide-react';
 import { useWizard } from '../../context/WizardContext';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../ui/Button';
 import { laadWoningen } from '../../lib/profiel';
 import { drukRapportAf } from '../../lib/rapport';
+import { TOETSRENTES } from '../../lib/normen';
 import type { GeslaagdeWoning } from '../../types/profiel';
 
 const euro = (n: number) =>
@@ -22,6 +26,13 @@ function initialen(naam: string) {
   if (delen.length >= 2) return (delen[0][0] + delen[delen.length - 1][0]).toUpperCase();
   return naam.slice(0, 2).toUpperCase();
 }
+
+const BOD_LABEL: Record<string, { label: string; kleur: string }> = {
+  interessant:  { label: '⭐ Interessant',  kleur: 'bg-yellow-100 text-yellow-700' },
+  bod:          { label: '🔨 Bod',          kleur: 'bg-blue-100 text-blue-700' },
+  geaccepteerd: { label: '✅ Geaccepteerd', kleur: 'bg-emerald-100 text-emerald-700' },
+  afgewezen:    { label: '❌ Afgewezen',    kleur: 'bg-red-100 text-red-700' },
+};
 
 /* ── Budget ring ── */
 function BudgetRing({ bedrag, pct }: { bedrag: number; pct: number }) {
@@ -46,22 +57,62 @@ function BudgetRing({ bedrag, pct }: { bedrag: number; pct: number }) {
   );
 }
 
-/* ── Voortgang tracker ── */
-function VoortgangTracker({ heeftResultaat, heeftWoning }: { heeftResultaat: boolean; heeftWoning: boolean }) {
+/* ── Voortgang + volgende stap ── */
+type VolgendeStap = { titel: string; tekst: string; actie: string; target: 'woningen' | 'profiel'; icoon: typeof Home };
+
+function bepaalVolgendeStap(woningen: GeslaagdeWoning[]): VolgendeStap {
+  const geaccepteerd = woningen.find(w => w.bodStatus === 'geaccepteerd');
+  const metBod = woningen.find(w => w.bodStatus === 'bod');
+
+  if (geaccepteerd) {
+    return {
+      titel: 'Bod geaccepteerd!',
+      tekst: `Je bod op ${geaccepteerd.adres} is geaccepteerd. Tijd om de hypotheekaanvraag te starten.`,
+      actie: 'Volgende stap bekijken', target: 'profiel', icoon: PartyPopper,
+    };
+  }
+  if (metBod) {
+    return {
+      titel: 'Bod uitstaand',
+      tekst: `Je hebt ${euro(metBod.bodBedrag ?? metBod.vraagprijs)} geboden op ${metBod.adres}.`,
+      actie: 'Status bekijken', target: 'woningen', icoon: Gavel,
+    };
+  }
+  if (woningen.length > 0) {
+    return {
+      titel: 'Klaar voor een bod?',
+      tekst: `Je hebt ${woningen.length} woning${woningen.length > 1 ? 'en' : ''} bekeken. Markeer er een als interessant of breng een bod uit.`,
+      actie: 'Naar woningen', target: 'woningen', icoon: Gavel,
+    };
+  }
+  return {
+    titel: 'Zoek je eerste woning',
+    tekst: 'Voeg een Funda-link toe en zie direct of de woning binnen je budget past.',
+    actie: 'Woning toevoegen', target: 'woningen', icoon: Home,
+  };
+}
+
+function VoortgangCard({ woningen, onActie }: { woningen: GeslaagdeWoning[]; onActie: (target: 'woningen' | 'profiel') => void }) {
+  const heeftWoning = woningen.length > 0;
+  const heeftBod = woningen.some(w => w.bodStatus === 'bod' || w.bodStatus === 'geaccepteerd');
+  const heeftAanvraag = woningen.some(w => w.bodStatus === 'geaccepteerd');
+
   const stappen = [
-    { label: 'Berekend',  done: heeftResultaat },
-    { label: 'Woning',    done: heeftWoning },
-    { label: 'Bod',       done: false },
-    { label: 'Aanvraag',  done: false },
-    { label: 'Sleutels',  done: false },
+    { label: 'Berekend', done: true },
+    { label: 'Woning',   done: heeftWoning },
+    { label: 'Bod',      done: heeftBod },
+    { label: 'Aanvraag', done: heeftAanvraag },
+    { label: 'Sleutels', done: false },
   ];
   let huidigeStap = -1;
   stappen.forEach((s, i) => { if (s.done) huidigeStap = i; });
 
+  const volgende = bepaalVolgendeStap(woningen);
+  const Icoon = volgende.icoon;
+
   return (
     <div className="bg-white rounded-2xl border border-gray-100 px-4 py-4">
-      <p className="text-xs font-semibold text-[#0D1F3C] mb-3">Jouw voortgang</p>
-      <div className="flex items-center">
+      <div className="flex items-center mb-4">
         {stappen.map((stap, i) => (
           <div key={stap.label} className="flex items-center flex-1 last:flex-none">
             <div className="flex flex-col items-center gap-1">
@@ -89,6 +140,20 @@ function VoortgangTracker({ heeftResultaat, heeftWoning }: { heeftResultaat: boo
           </div>
         ))}
       </div>
+
+      <div className="flex items-start gap-3 pt-3 border-t border-gray-50">
+        <div className="w-8 h-8 bg-[#99248F]/8 rounded-lg flex items-center justify-center shrink-0">
+          <Icoon className="w-4 h-4 text-[#99248F]" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-semibold text-[#0D1F3C]">{volgende.titel}</p>
+          <p className="text-[11px] text-gray-500 mt-0.5 leading-relaxed">{volgende.tekst}</p>
+          <button type="button" onClick={() => onActie(volgende.target)}
+            className="text-xs text-[#99248F] font-medium mt-1.5 hover:opacity-75 transition cursor-pointer flex items-center gap-0.5">
+            {volgende.actie} <ChevronRight className="w-3 h-3" />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -101,12 +166,19 @@ function WoningKaart({ woning, maxBudget, onClick }: {
 }) {
   const pct = maxBudget > 0 ? Math.round((woning.vraagprijs / maxBudget) * 100) : 0;
   const past = woning.vraagprijs <= maxBudget;
+  const status = woning.bodStatus ? BOD_LABEL[woning.bodStatus] : null;
   return (
     <div className="bg-white rounded-xl border border-gray-100 p-3 shrink-0 w-44 cursor-pointer"
       onClick={onClick}>
-      <div className={`text-[10px] font-semibold px-2 py-0.5 rounded-full inline-block mb-2
-        ${past ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
-        {pct}% van budget
+      <div className="flex items-center justify-between gap-1 mb-2">
+        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${past ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
+          {pct}% van budget
+        </span>
+        {status && (
+          <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${status.kleur}`}>
+            {status.label}
+          </span>
+        )}
       </div>
       <p className="text-xs font-semibold text-[#0D1F3C] truncate">{woning.adres}</p>
       <p className="text-[10px] text-gray-400 truncate">{woning.stad}</p>
@@ -119,12 +191,33 @@ function WoningKaart({ woning, maxBudget, onClick }: {
   );
 }
 
+/* ── Doorstromer: overwaarde mini-card ── */
+function OverwaardeKaart({ waarde, schuld, onClick }: { waarde: number; schuld: number; onClick: () => void }) {
+  const makelaar = Math.round(waarde * 0.015);
+  const notaris = 1_000;
+  const netto = Math.max(0, waarde - schuld - makelaar - notaris);
+  return (
+    <button type="button" onClick={onClick}
+      className="w-full bg-white rounded-2xl border border-gray-100 p-4 flex items-center gap-3 hover:border-[#99248F]/30 transition cursor-pointer text-left">
+      <div className="w-9 h-9 bg-blue-50 rounded-lg flex items-center justify-center shrink-0">
+        <TrendingUp className="w-4 h-4 text-blue-600" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-semibold text-[#0D1F3C]">Overwaarde huidige woning</p>
+        <p className="text-[11px] text-gray-400">Netto ≈ {euro(netto)} beschikbaar als eigen geld</p>
+      </div>
+      <ChevronRight className="w-4 h-4 text-gray-200 shrink-0" />
+    </button>
+  );
+}
+
 /* ══════════════════════════════════════════════════════ */
 
 export function DashboardScreen() {
-  const { resultaat, sessie, situatie, setStap } = useWizard();
+  const { resultaat, sessie, situatie, woning, actueleRentes, setStap } = useWizard();
   const { setTab } = useApp();
   const [woningen, setWoningen] = useState<GeslaagdeWoning[]>([]);
+  const [sliderEigenGeld, setSliderEigenGeld] = useState(woning.eigenGeld ?? 0);
 
   useEffect(() => {
     laadWoningen().then(setWoningen);
@@ -168,6 +261,9 @@ export function DashboardScreen() {
   const ringPct = resultaat.maxHypotheekOpInkomen > 0
     ? resultaat.effectieveMaxHypotheek / resultaat.maxHypotheekOpInkomen
     : 1;
+  const periode = woning.rentevastePeriode ?? 10;
+  const rente = actueleRentes[periode] ?? TOETSRENTES[periode] ?? 0.05;
+  const isDoorstromerMetOverwaarde = !situatie.isStarter && (woning.huidigeWoningWaarde ?? 0) > 0;
 
   return (
     <div className="space-y-4">
@@ -190,6 +286,9 @@ export function DashboardScreen() {
       {/* ── Budget hero ── */}
       <div className="bg-white rounded-2xl border border-gray-100 p-5">
         <BudgetRing bedrag={resultaat.effectieveMaxHypotheek} pct={ringPct} />
+        <p className="text-center text-[10px] text-gray-400 -mt-2">
+          Bij {periode} jaar rentevast à {(rente * 100).toFixed(1)}%
+        </p>
 
         {/* Maandlasten */}
         <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-gray-50">
@@ -204,7 +303,7 @@ export function DashboardScreen() {
         </div>
 
         {/* Badges */}
-        <div className="flex gap-2 mt-3 pt-3 border-t border-gray-50">
+        <div className="flex gap-2 mt-3 pt-3 border-t border-gray-50 flex-wrap">
           {resultaat.nhgMogelijk && (
             <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-full">
               <ShieldCheck className="w-3 h-3" /> NHG
@@ -213,6 +312,11 @@ export function DashboardScreen() {
           {resultaat.startersvrijstelling && (
             <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-full">
               <Sparkles className="w-3 h-3" /> Startersvrijstelling
+            </span>
+          )}
+          {resultaat.energielabelBonus > 0 && (
+            <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-full">
+              ⚡ +{euro(resultaat.energielabelBonus)} energiebonus
             </span>
           )}
           {resultaat.eigenGeldTekort > 0 && (
@@ -228,8 +332,59 @@ export function DashboardScreen() {
         </button>
       </div>
 
-      {/* ── Voortgang ── */}
-      <VoortgangTracker heeftResultaat={!!resultaat} heeftWoning={woningen.length > 0} />
+      {/* ── Eigen geld slider ── */}
+      {(() => {
+        const koopbudget = Math.max(0,
+          resultaat.effectieveMaxHypotheek + sliderEigenGeld - resultaat.bijkomendeKosten.totaal
+        );
+        const extra = sliderEigenGeld - (woning.eigenGeld ?? 0);
+        return (
+          <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-[#0D1F3C]">Eigen geld</p>
+              <span className="text-sm font-bold text-[#99248F]">{euro(sliderEigenGeld)}</span>
+            </div>
+
+            <input
+              type="range"
+              min={0}
+              max={200000}
+              step={5000}
+              value={sliderEigenGeld}
+              onChange={e => setSliderEigenGeld(Number(e.target.value))}
+              className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
+              style={{ accentColor: '#99248F' }}
+            />
+
+            <div className="flex items-center justify-between border-t border-gray-50 pt-3">
+              <div>
+                <p className="text-[10px] text-gray-400 uppercase tracking-widest">Totaal koopbudget</p>
+                <p className="text-xl font-bold text-[#0D1F3C]">{euro(koopbudget)}</p>
+              </div>
+              {extra > 0 && (
+                <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg">
+                  +{euro(extra)}
+                </span>
+              )}
+            </div>
+            <p className="text-[10px] text-gray-300">
+              {euro(resultaat.effectieveMaxHypotheek)} hypotheek + {euro(sliderEigenGeld)} eigen geld − {euro(resultaat.bijkomendeKosten.totaal)} bijkomende kosten
+            </p>
+          </div>
+        );
+      })()}
+
+      {/* ── Voortgang + volgende stap ── */}
+      <VoortgangCard woningen={woningen} onActie={setTab} />
+
+      {/* ── Doorstromer: overwaarde ── */}
+      {isDoorstromerMetOverwaarde && (
+        <OverwaardeKaart
+          waarde={woning.huidigeWoningWaarde ?? 0}
+          schuld={woning.restschuldHypotheek ?? 0}
+          onClick={() => setStap(8)}
+        />
+      )}
 
       {/* ── Woningen ── */}
       {woningen.length > 0 ? (
