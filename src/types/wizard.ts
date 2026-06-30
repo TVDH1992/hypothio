@@ -37,6 +37,9 @@ export interface WoningData {
   rentevastePeriode: RentevastePeriode;
   hypotheekvorm: Hypotheekvorm;
   looptijdJaar: number;
+  // Doorstromers
+  huidigeWoningWaarde?: number;
+  restschuldHypotheek?: number;
 }
 
 export interface SituatieData {

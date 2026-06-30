@@ -1,9 +1,10 @@
-﻿import { useRef, useState } from 'react';
+﻿import { useRef, useState, useEffect } from 'react';
 import { RotateCcw, LogOut, Calculator, Upload, CheckCircle, Loader2, Users, Pencil, X, Check } from 'lucide-react';
 import { useWizard } from '../../context/WizardContext';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../ui/Button';
-import { verwijderProfiel } from '../../lib/profiel';
+import { verwijderProfiel, laadBerekeningen } from '../../lib/profiel';
+import type { Berekening } from '../../types/profiel';
 import { supabase } from '../../lib/supabase';
 
 type UploadStatus = 'idle' | 'laden' | 'succes' | 'fout';
@@ -105,6 +106,11 @@ export function ProfielScreen({ onUitloggen }: Props) {
   const [bewerkNaam, setBewerkNaam] = useState(false);
   const [nieuweNaam, setNieuweNaam] = useState(sessie.naam);
   const [naamLaden, setNaamLaden] = useState(false);
+  const [berekeningen, setBerekeningen] = useState<Berekening[]>([]);
+
+  useEffect(() => {
+    laadBerekeningen().then(setBerekeningen);
+  }, []);
 
   async function slaaNaamOp() {
     const naam = nieuweNaam.trim();
@@ -227,6 +233,36 @@ export function ProfielScreen({ onUitloggen }: Props) {
             className="text-sm text-[#99248F] mt-2 hover:opacity-75 transition cursor-pointer">
             Start een berekening →
           </button>
+        </div>
+      )}
+
+      {/* Opgeslagen scenario's */}
+      {berekeningen.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-sm font-semibold text-[#0D1F3C]">Opgeslagen scenario's</p>
+          <div className="space-y-2">
+            {berekeningen.map(b => (
+              <div key={b.id} className="bg-white rounded-xl border border-gray-100 p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-semibold text-[#0D1F3C]">{b.naam}</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">{b.aangemaakt}</p>
+                  </div>
+                  <p className="text-base font-bold text-[#99248F] shrink-0">{euro(b.maxHypotheek)}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-gray-50">
+                  <div>
+                    <p className="text-[10px] text-gray-400">Bruto/mnd</p>
+                    <p className="text-xs font-semibold text-[#0D1F3C]">{euro(b.resultaat.brutoMaandlast)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-400">Netto/mnd</p>
+                    <p className="text-xs font-semibold text-[#0D1F3C]">{euro(Math.max(0, b.resultaat.nettoMaandlast))}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

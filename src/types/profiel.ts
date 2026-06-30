@@ -43,6 +43,8 @@ export interface FundaAnalyseCache {
   huispediaData: HuispediaData | null;
 }
 
+export type BodStatus = 'interessant' | 'bod' | 'geaccepteerd' | 'afgewezen';
+
 export interface GeslaagdeWoning {
   id: string;
   fundaUrl: string;
@@ -52,6 +54,8 @@ export interface GeslaagdeWoning {
   marktwaarde?: number;
   toegevoegd: string;
   analyseData?: FundaAnalyseCache;
+  bodStatus?: BodStatus;
+  bodBedrag?: number;
 }
 
 export interface Profiel {

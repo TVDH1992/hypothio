@@ -237,7 +237,24 @@ export function Stap8Resultaat() {
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <p className="text-sm font-semibold text-[#0D1F3C] mb-1">{adv ? 'Bijkomende kosten koper' : 'Wat komt er nog bij?'}</p>
           {!adv && <p className="text-xs text-gray-400 mb-3">Dit zijn éénmalige kosten bovenop de koopsom</p>}
-          <Rij label="Overdrachtsbelasting" waarde={euro(bijkomendeKosten.overdrachtsbelasting)} sub={startersvrijstelling ? '0% — startersvrijstelling' : '2% van koopsom'} />
+          <Rij
+            label="Overdrachtsbelasting"
+            waarde={euro(bijkomendeKosten.overdrachtsbelasting)}
+            sub={
+              startersvrijstelling && situatie.metPartner && bijkomendeKosten.overdrachtsbelasting > 0
+                ? 'Jij: 0% (vrijstelling) · Partner: 2% over helft koopsom'
+                : startersvrijstelling ? '0% — startersvrijstelling' : '2% van koopsom'
+            }
+          />
+          {!adv && startersvrijstelling && situatie.metPartner && bijkomendeKosten.overdrachtsbelasting > 0 && (
+            <div className="px-1 pb-1">
+              <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800">
+                <span className="font-medium">Let op:</span> Jij hebt startersvrijstelling (0% OVB), maar je partner niet.
+                Je partner betaalt 2% over zijn/haar helft van de koopsom: {euro(bijkomendeKosten.overdrachtsbelasting)}.
+                Zorg dat je partner dit bedrag als spaargeld beschikbaar heeft.
+              </div>
+            </div>
+          )}
           <Rij label="Notariskosten" waarde="ca. €1.500 – €3.000" sub={adv ? undefined : 'Leveringsakte + hypotheekakte'} />
           <Rij label="Taxatiekosten" waarde="ca. €500 – €900" sub={adv ? undefined : 'Verplicht voor hypotheekaanvraag'} />
           <Rij label={adv ? 'Advies- en bemiddelingskosten' : 'Hypotheekadviseur'} waarde="ca. €2.500 – €4.000" sub={adv ? undefined : 'Onafhankelijk advies is het waard'} />
@@ -422,6 +439,50 @@ export function Stap8Resultaat() {
                 </div>
               ))}
             </div>
+          </div>
+        );
+      })()}
+
+      {/* Doorstromers: overwaarde */}
+      {!adv && !situatie.isStarter && (woning.huidigeWoningWaarde ?? 0) > 0 && (() => {
+        const waarde = woning.huidigeWoningWaarde ?? 0;
+        const schuld = woning.restschuldHypotheek ?? 0;
+        const makelaar = Math.round(waarde * 0.015);
+        const notaris = 1_000;
+        const netto = Math.max(0, waarde - schuld - makelaar - notaris);
+        const totaalBudget = effectieveMaxHypotheek + netto;
+        return (
+          <div className="bg-white rounded-2xl border border-gray-100 p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <Home className="w-4 h-4 text-[#99248F]" />
+              <p className="text-sm font-semibold text-[#0D1F3C]">Overwaarde huidige woning</p>
+            </div>
+            <div className="space-y-1.5 text-sm mb-4">
+              <div className="flex justify-between text-gray-500">
+                <span>Verkoopprijs</span><span>{euro(waarde)}</span>
+              </div>
+              <div className="flex justify-between text-gray-500">
+                <span>Restschuld</span><span>−{euro(schuld)}</span>
+              </div>
+              <div className="flex justify-between text-gray-500">
+                <span>Makelaarskosten (~1,5%)</span><span>−{euro(makelaar)}</span>
+              </div>
+              <div className="flex justify-between text-gray-500">
+                <span>Notariskosten</span><span>−{euro(notaris)}</span>
+              </div>
+              <div className="flex justify-between font-semibold text-[#0D1F3C] border-t border-gray-100 pt-2 mt-1">
+                <span>Netto overwaarde</span><span>≈ {euro(netto)}</span>
+              </div>
+            </div>
+            {netto > 0 && (
+              <div className="bg-[#99248F]/5 rounded-xl p-3">
+                <p className="text-xs text-gray-600">
+                  <span className="font-semibold text-[#0D1F3C]">Totaal koopbudget:</span> Met je netto overwaarde als eigen geld kun je een woning kopen tot ca.{' '}
+                  <span className="font-bold text-[#99248F]">{euro(totaalBudget)}</span>
+                  {' '}(hypotheek + overwaarde).
+                </p>
+              </div>
+            )}
           </div>
         );
       })()}

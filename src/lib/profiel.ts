@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Profiel, GeslaagdeWoning, Sessie } from '../types/profiel';
+import type { Profiel, GeslaagdeWoning, Sessie, BodStatus } from '../types/profiel';
 
 const SESSIE_KEY = 'hypothio_sessie';
 
@@ -91,6 +91,8 @@ export async function laadWoningen(): Promise<GeslaagdeWoning[]> {
     marktwaarde: w.marktwaarde ?? undefined,
     toegevoegd: new Date(w.toegevoegd_op).toLocaleDateString('nl-NL'),
     analyseData: w.analyse_data ?? undefined,
+    bodStatus: w.analyse_data?.bod_status ?? undefined,
+    bodBedrag: w.analyse_data?.bod_bedrag ?? undefined,
   }));
 }
 
@@ -123,6 +125,11 @@ export async function voegWoningToe(woning: Omit<GeslaagdeWoning, 'id' | 'toegev
 
 export async function verwijderWoning(id: string): Promise<void> {
   await supabase.from('woningen').delete().eq('id', id);
+}
+
+export async function updateWoningBod(woning: GeslaagdeWoning, bodStatus: BodStatus | undefined, bodBedrag?: number): Promise<void> {
+  const merged = { ...(woning.analyseData ?? {}), bod_status: bodStatus, bod_bedrag: bodBedrag };
+  await supabase.from('woningen').update({ analyse_data: merged }).eq('id', woning.id);
 }
 
 // --- Berekeningen (scenario's) ---

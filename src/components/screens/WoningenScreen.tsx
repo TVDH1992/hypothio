@@ -11,9 +11,10 @@ import {
   type AdresSuggestie, type WozResultaat,
 } from '../../lib/woz';
 import {
-  laadWoningen, voegWoningToe, verwijderWoning,
+  laadWoningen, voegWoningToe, verwijderWoning, updateWoningBod,
   parseFundaUrl, laadProfiel,
 } from '../../lib/profiel';
+import type { BodStatus } from '../../types/profiel';
 import type { GeslaagdeWoning, FundaAnalyse, FundaDetails, HuispediaData } from '../../types/profiel';
 
 function euro(n: number) {
@@ -57,6 +58,7 @@ export function WoningenScreen() {
   const [fundaAnalyse, setFundaAnalyse] = useState<FundaAnalyse | null>(null);
   const [huispediaData, setHuispediaData] = useState<HuispediaData | null>(null);
   const [uitgebreid, setUitgebreid] = useState<Record<string, boolean>>({});
+  const [bodBedragen, setBodBedragen] = useState<Record<string, string>>({});
 
   useEffect(() => {
     async function laad() {
@@ -746,6 +748,62 @@ export function WoningenScreen() {
                     )}
                   </div>
                 )}
+
+                {/* Bod status */}
+                {(() => {
+                  const statussen: { key: BodStatus; label: string; kleur: string }[] = [
+                    { key: 'interessant',  label: '⭐ Interessant',      kleur: 'bg-yellow-100 text-yellow-700' },
+                    { key: 'bod',          label: '🔨 Bod uitgebracht',  kleur: 'bg-blue-100 text-blue-700' },
+                    { key: 'geaccepteerd', label: '✅ Geaccepteerd',     kleur: 'bg-emerald-100 text-emerald-700' },
+                    { key: 'afgewezen',    label: '❌ Afgewezen',        kleur: 'bg-red-100 text-red-700' },
+                  ];
+                  async function stelStatusIn(nieuweStatus: BodStatus) {
+                    const toggle = w.bodStatus === nieuweStatus ? undefined : nieuweStatus;
+                    setWoningen(prev => prev.map(x => x.id === w.id ? { ...x, bodStatus: toggle } : x));
+                    await updateWoningBod(w, toggle, w.bodBedrag);
+                  }
+                  async function slaaBodBedragOp() {
+                    const bedrag = Number(bodBedragen[w.id]);
+                    if (!bedrag) return;
+                    setWoningen(prev => prev.map(x => x.id === w.id ? { ...x, bodBedrag: bedrag } : x));
+                    await updateWoningBod({ ...w, bodBedrag: bedrag }, w.bodStatus, bedrag);
+                  }
+                  return (
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                      <div className="flex gap-1.5 flex-wrap">
+                        {statussen.map(s => (
+                          <button key={s.key} type="button" onClick={() => stelStatusIn(s.key)}
+                            className={`text-[10px] px-2 py-1 rounded-full font-medium cursor-pointer transition
+                              ${w.bodStatus === s.key ? s.kleur : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}>
+                            {s.label}
+                          </button>
+                        ))}
+                      </div>
+                      {w.bodStatus === 'bod' && (
+                        <div className="mt-2 flex gap-2 items-center">
+                          <span className="text-[10px] text-gray-400">Bod:</span>
+                          <input
+                            type="number"
+                            placeholder={w.bodBedrag ? String(w.bodBedrag) : 'bijv. 340000'}
+                            value={bodBedragen[w.id] ?? ''}
+                            onChange={e => setBodBedragen(prev => ({ ...prev, [w.id]: e.target.value }))}
+                            className="flex-1 text-xs border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#99248F]"
+                          />
+                          {w.bodBedrag && !bodBedragen[w.id] && (
+                            <span className="text-xs font-semibold text-blue-700">{euro(w.bodBedrag)}</span>
+                          )}
+                          {bodBedragen[w.id] && (
+                            <button type="button" onClick={slaaBodBedragOp}
+                              className="text-[10px] text-[#99248F] font-medium hover:opacity-75 cursor-pointer">
+                              Opslaan
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
                 </div>{/* einde p-4 */}
               </div>
             );
