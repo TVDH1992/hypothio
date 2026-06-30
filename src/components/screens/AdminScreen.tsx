@@ -257,13 +257,23 @@ interface Release {
 
 const RELEASES: Release[] = [
   {
-    versie: '1.5',
+    versie: '1.6',
     datum: '30 jun 2026',
     label: 'Huidige versie',
     items: [
-      { tekst: 'Dashboard redesign: cleaner layout met circulaire budget ring (SVG), voortgang tracker en woning match-percentage', nieuw: true },
-      { tekst: 'Rekenengine v4.0: alleenstaanden-correctie +€17k (Nibud 2026), AFM-toetsrente vloer 5% bij RVP < 10 jaar', nieuw: true },
-      { tekst: 'Pro-rata OVB: 50/50 splitsing per partner, elk op eigen starterstatus beoordeeld', nieuw: true },
+      { tekst: 'Dashboard: voortgang tracker gekoppeld aan echte bodstatus, contextuele "volgende stap"-CTA en eigen geld slider terug', nieuw: true },
+      { tekst: 'Doorstromers: overwaarde-module (verkoopprijs − restschuld − kosten) in wizard, resultaatpagina en dashboard', nieuw: true },
+      { tekst: 'Bod-flow: status per woning bijhouden (interessant/bod/geaccepteerd/afgewezen) met bodbedrag', nieuw: true },
+      { tekst: 'Scenario vergelijker: opgeslagen berekeningen naast elkaar zien in Profiel', nieuw: true },
+    ],
+  },
+  {
+    versie: '1.5',
+    datum: '30 jun 2026',
+    items: [
+      { tekst: 'Dashboard redesign: cleaner layout met circulaire budget ring (SVG), voortgang tracker en woning match-percentage' },
+      { tekst: 'Rekenengine v4.0: alleenstaanden-correctie +€17k (Nibud 2026), AFM-toetsrente vloer 5% bij RVP < 10 jaar' },
+      { tekst: 'Pro-rata OVB: 50/50 splitsing per partner, elk op eigen starterstatus beoordeeld' },
     ],
   },
   {
