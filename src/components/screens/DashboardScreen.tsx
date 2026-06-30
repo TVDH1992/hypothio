@@ -55,7 +55,8 @@ function VoortgangTracker({ heeftResultaat, heeftWoning }: { heeftResultaat: boo
     { label: 'Aanvraag',  done: false },
     { label: 'Sleutels',  done: false },
   ];
-  const huidigeStap = stappen.findLastIndex(s => s.done);
+  let huidigeStap = -1;
+  stappen.forEach((s, i) => { if (s.done) huidigeStap = i; });
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 px-4 py-4">
