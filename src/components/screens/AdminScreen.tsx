@@ -257,13 +257,22 @@ interface Release {
 
 const RELEASES: Release[] = [
   {
-    versie: '1.4',
+    versie: '1.5',
     datum: '30 jun 2026',
     label: 'Huidige versie',
     items: [
-      { tekst: 'Eigen geld slider op dashboard: live koopbudget = hypotheek + eigen geld − bijkomende kosten', nieuw: true },
-      { tekst: 'Naam instellen in Profiel: bewerkbaar via potloodknop, opgeslagen in Supabase account', nieuw: true },
-      { tekst: 'Jij/jullie tekst op resultaatpagina: volledig correct voor aanvragen met of zonder partner', nieuw: true },
+      { tekst: 'Dashboard redesign: cleaner layout met circulaire budget ring (SVG), voortgang tracker en woning match-percentage', nieuw: true },
+      { tekst: 'Rekenengine v4.0: alleenstaanden-correctie +€17k (Nibud 2026), AFM-toetsrente vloer 5% bij RVP < 10 jaar', nieuw: true },
+      { tekst: 'Pro-rata OVB: 50/50 splitsing per partner, elk op eigen starterstatus beoordeeld', nieuw: true },
+    ],
+  },
+  {
+    versie: '1.4',
+    datum: '30 jun 2026',
+    items: [
+      { tekst: 'Eigen geld slider op dashboard: live koopbudget = hypotheek + eigen geld − bijkomende kosten' },
+      { tekst: 'Naam instellen in Profiel: bewerkbaar via potloodknop, opgeslagen in Supabase account' },
+      { tekst: 'Jij/jullie tekst op resultaatpagina: volledig correct voor aanvragen met of zonder partner' },
     ],
   },
   {

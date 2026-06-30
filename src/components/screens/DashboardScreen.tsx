@@ -1,24 +1,20 @@
 import { useEffect, useState } from 'react';
-import { TrendingUp, Plus, FileText, ChevronRight, CheckCircle, XCircle,
-         BookmarkPlus, Users, User, RefreshCw, Home, ChevronDown, ChevronUp,
-         ShieldCheck, Sparkles, Clock } from 'lucide-react';
+import { FileText, RefreshCw, Users, User, ShieldCheck, Sparkles, Plus, Home, ChevronRight } from 'lucide-react';
 import { useWizard } from '../../context/WizardContext';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../ui/Button';
-import { laadWoningen, laadBerekeningen } from '../../lib/profiel';
+import { laadWoningen } from '../../lib/profiel';
 import { drukRapportAf } from '../../lib/rapport';
-import type { GeslaagdeWoning, Berekening } from '../../types/profiel';
+import type { GeslaagdeWoning } from '../../types/profiel';
 
-function euro(n: number) {
-  return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
-}
+const euro = (n: number) =>
+  new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
 
 function greeting(naam: string) {
   const uur = new Date().getHours();
   const prefix = uur < 12 ? 'Goedemorgen' : uur < 18 ? 'Goedemiddag' : 'Goedenavond';
   const voornaam = naam.split(' ')[0];
-  const netjes = voornaam.charAt(0).toUpperCase() + voornaam.slice(1);
-  return `${prefix}, ${netjes}`;
+  return `${prefix}, ${voornaam.charAt(0).toUpperCase() + voornaam.slice(1)}`;
 }
 
 function initialen(naam: string) {
@@ -27,19 +23,110 @@ function initialen(naam: string) {
   return naam.slice(0, 2).toUpperCase();
 }
 
+/* ── Budget ring ── */
+function BudgetRing({ bedrag, pct }: { bedrag: number; pct: number }) {
+  const R = 70, SW = 11;
+  const circ = 2 * Math.PI * R;
+  return (
+    <div className="relative w-48 h-48 flex items-center justify-center mx-auto">
+      <svg className="absolute inset-0 -rotate-90" width="192" height="192" viewBox="0 0 192 192">
+        <circle cx="96" cy="96" r={R} fill="none" stroke="#f3f4f6" strokeWidth={SW} />
+        <circle cx="96" cy="96" r={R} fill="none" stroke="#99248F" strokeWidth={SW}
+          strokeLinecap="round"
+          strokeDasharray={circ}
+          strokeDashoffset={circ * (1 - Math.min(Math.max(pct, 0.05), 1))}
+          style={{ transition: 'stroke-dashoffset 0.8s ease' }}
+        />
+      </svg>
+      <div className="text-center z-10 px-4">
+        <p className="text-2xl font-bold text-[#0D1F3C] leading-tight">{euro(bedrag)}</p>
+        <p className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-widest">max hypotheek</p>
+      </div>
+    </div>
+  );
+}
+
+/* ── Voortgang tracker ── */
+function VoortgangTracker({ heeftResultaat, heeftWoning }: { heeftResultaat: boolean; heeftWoning: boolean }) {
+  const stappen = [
+    { label: 'Berekend',  done: heeftResultaat },
+    { label: 'Woning',    done: heeftWoning },
+    { label: 'Bod',       done: false },
+    { label: 'Aanvraag',  done: false },
+    { label: 'Sleutels',  done: false },
+  ];
+  const huidigeStap = stappen.findLastIndex(s => s.done);
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 px-4 py-4">
+      <p className="text-xs font-semibold text-[#0D1F3C] mb-3">Jouw voortgang</p>
+      <div className="flex items-center">
+        {stappen.map((stap, i) => (
+          <div key={stap.label} className="flex items-center flex-1 last:flex-none">
+            <div className="flex flex-col items-center gap-1">
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-colors
+                ${stap.done
+                  ? 'bg-[#99248F] border-2 border-[#99248F]'
+                  : i === huidigeStap + 1
+                  ? 'bg-white border-2 border-[#99248F]'
+                  : 'bg-white border-2 border-gray-200'
+                }`}>
+                {stap.done && (
+                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 12 12">
+                    <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                )}
+              </div>
+              <p className={`text-[9px] font-medium whitespace-nowrap
+                ${stap.done ? 'text-[#99248F]' : i === huidigeStap + 1 ? 'text-[#0D1F3C]' : 'text-gray-300'}`}>
+                {stap.label}
+              </p>
+            </div>
+            {i < stappen.length - 1 && (
+              <div className={`flex-1 h-px mx-1 mb-4 ${stap.done ? 'bg-[#99248F]' : 'bg-gray-100'}`} />
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── Woning kaartje ── */
+function WoningKaart({ woning, maxBudget, onClick }: {
+  woning: GeslaagdeWoning;
+  maxBudget: number;
+  onClick: () => void;
+}) {
+  const pct = maxBudget > 0 ? Math.round((woning.vraagprijs / maxBudget) * 100) : 0;
+  const past = woning.vraagprijs <= maxBudget;
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 p-3 shrink-0 w-44 cursor-pointer"
+      onClick={onClick}>
+      <div className={`text-[10px] font-semibold px-2 py-0.5 rounded-full inline-block mb-2
+        ${past ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
+        {pct}% van budget
+      </div>
+      <p className="text-xs font-semibold text-[#0D1F3C] truncate">{woning.adres}</p>
+      <p className="text-[10px] text-gray-400 truncate">{woning.stad}</p>
+      <p className="text-sm font-bold text-[#0D1F3C] mt-1.5">{euro(woning.vraagprijs)}</p>
+      <div className="mt-2 h-1 bg-gray-100 rounded-full overflow-hidden">
+        <div className={`h-full rounded-full transition-all ${past ? 'bg-emerald-400' : 'bg-red-400'}`}
+          style={{ width: `${Math.min(pct, 100)}%` }} />
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════ */
+
 export function DashboardScreen() {
-  const { resultaat, sessie, situatie, woning, setStap, actueleRentes, herstelScenario } = useWizard();
+  const { resultaat, sessie, situatie, setStap } = useWizard();
   const { setTab } = useApp();
-  const [woningen, setWoningen]             = useState<GeslaagdeWoning[]>([]);
-  const [berekeningen, setBerekeningen]     = useState<Berekening[]>([]);
-  const [kostenUitgeklapt, setKostenUitgeklapt] = useState(false);
-  const [sliderEigenGeld, setSliderEigenGeld] = useState(woning.eigenGeld ?? 0);
+  const [woningen, setWoningen] = useState<GeslaagdeWoning[]>([]);
 
   useEffect(() => {
-    Promise.all([laadWoningen(), laadBerekeningen()]).then(([w, b]) => {
-      setWoningen(w);
-      setBerekeningen(b);
-    });
+    laadWoningen().then(setWoningen);
   }, []);
 
   /* ── Lege staat ── */
@@ -77,202 +164,80 @@ export function DashboardScreen() {
   }
 
   /* ── Dashboard staat ── */
-  const metPartner = situatie.metPartner;
-  const rente10 = actueleRentes[10];
-  const woningenPassen = woningen.filter(w => w.vraagprijs <= resultaat.effectieveMaxHypotheek);
-  const hypotheekvorm = woning.hypotheekvorm ?? 'annuitair';
-  const hypotheekvormLabel = hypotheekvorm === 'annuitair' ? 'Annuïtair' : hypotheekvorm === 'lineair' ? 'Lineair' : 'Aflossingsvrij';
+  const ringPct = resultaat.maxHypotheekOpInkomen > 0
+    ? resultaat.effectieveMaxHypotheek / resultaat.maxHypotheekOpInkomen
+    : 1;
 
   return (
     <div className="space-y-4">
 
-      {/* ── Header ── */}
+      {/* ── Greeting ── */}
       <div className="flex items-center justify-between pt-1">
         <div>
           <h1 className="text-xl font-bold text-[#0D1F3C]">{greeting(sessie.naam)}</h1>
           <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
-            {metPartner ? <Users className="w-3 h-3" /> : <User className="w-3 h-3" />}
-            {metPartner ? 'Berekening met partner' : 'Berekening alleen'}
+            {situatie.metPartner ? <Users className="w-3 h-3" /> : <User className="w-3 h-3" />}
+            {situatie.metPartner ? 'Aanvraag met partner' : 'Aanvraag alleen'}
           </p>
         </div>
-        <div className="w-9 h-9 rounded-full bg-[#99248F] flex items-center justify-center shrink-0">
+        <div className="w-9 h-9 rounded-full bg-[#99248F] flex items-center justify-center shrink-0 cursor-pointer"
+          onClick={() => setTab('profiel')}>
           <span className="text-white text-xs font-bold">{initialen(sessie.naam)}</span>
         </div>
       </div>
 
-      {/* ── Hero card ── */}
-      <div
-        className="rounded-2xl p-5 text-white relative overflow-hidden"
-        style={{ background: 'linear-gradient(135deg, #0D1F3C 0%, #1a1a4e 50%, #2d0f3d 100%)' }}
-      >
-        {/* Decoratieve cirkels */}
-        <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full opacity-10"
-          style={{ background: 'radial-gradient(circle, #99248F, transparent)' }} />
-        <div className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full opacity-10"
-          style={{ background: 'radial-gradient(circle, #99248F, transparent)' }} />
+      {/* ── Budget hero ── */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-5">
+        <BudgetRing bedrag={resultaat.effectieveMaxHypotheek} pct={ringPct} />
 
-        <div className="relative">
-          <p className="text-xs text-white/50 uppercase tracking-widest">Maximale hypotheek</p>
-          <p className="text-4xl font-bold tracking-tight mt-1 leading-none">
-            {euro(resultaat.effectieveMaxHypotheek)}
-          </p>
-          {resultaat.eigenGeldTekort > 0 && (
-            <p className="text-[11px] text-amber-300 mt-1.5 flex items-center gap-1">
-              ⚠ Eigen geld tekort: {euro(resultaat.eigenGeldTekort)}
-            </p>
-          )}
-
-          <div className="grid grid-cols-3 gap-2 mt-5 pt-4 border-t border-white/10">
-            <div>
-              <p className="text-[10px] text-white/40">Bruto/mnd</p>
-              <p className="text-sm font-semibold mt-0.5">{euro(resultaat.brutoMaandlast)}</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-white/40">Netto/mnd</p>
-              <p className="text-sm font-semibold mt-0.5">{euro(Math.max(0, resultaat.nettoMaandlast))}</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-white/40">Toetsinkomen</p>
-              <p className="text-sm font-semibold mt-0.5">{euro(resultaat.toetsinkomen)}</p>
-            </div>
+        {/* Maandlasten */}
+        <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-gray-50">
+          <div className="text-center">
+            <p className="text-[10px] text-gray-400 uppercase tracking-widest">Bruto/mnd</p>
+            <p className="text-base font-bold text-[#0D1F3C] mt-0.5">{euro(resultaat.brutoMaandlast)}</p>
           </div>
+          <div className="text-center">
+            <p className="text-[10px] text-gray-400 uppercase tracking-widest">Netto/mnd</p>
+            <p className="text-base font-bold text-[#0D1F3C] mt-0.5">{euro(Math.max(0, resultaat.nettoMaandlast))}</p>
+          </div>
+        </div>
+
+        {/* Badges */}
+        <div className="flex gap-2 mt-3 pt-3 border-t border-gray-50">
+          {resultaat.nhgMogelijk && (
+            <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-full">
+              <ShieldCheck className="w-3 h-3" /> NHG
+            </span>
+          )}
+          {resultaat.startersvrijstelling && (
+            <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-full">
+              <Sparkles className="w-3 h-3" /> Startersvrijstelling
+            </span>
+          )}
+          {resultaat.eigenGeldTekort > 0 && (
+            <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-2 py-1 rounded-full">
+              ⚠ Tekort {euro(resultaat.eigenGeldTekort)}
+            </span>
+          )}
         </div>
 
         <button type="button" onClick={() => setStap(8)}
-          className="absolute top-4 right-4 text-[10px] text-white/40 hover:text-white/70 flex items-center gap-0.5 transition cursor-pointer">
-          Detail <ChevronRight className="w-3 h-3" />
+          className="w-full text-xs text-[#99248F] mt-3 pt-3 border-t border-gray-50 flex items-center justify-center gap-1 hover:opacity-75 transition cursor-pointer">
+          Volledige berekening bekijken <ChevronRight className="w-3.5 h-3.5" />
         </button>
       </div>
 
-      {/* ── Status badges ── */}
-      <div className="flex gap-2">
-        <div className={`flex-1 flex items-center gap-2 rounded-xl px-3 py-2.5 border ${resultaat.nhgMogelijk ? 'bg-emerald-50 border-emerald-100' : 'bg-gray-50 border-gray-100'}`}>
-          <ShieldCheck className={`w-4 h-4 shrink-0 ${resultaat.nhgMogelijk ? 'text-emerald-500' : 'text-gray-300'}`} />
-          <div>
-            <p className={`text-[10px] font-semibold ${resultaat.nhgMogelijk ? 'text-emerald-700' : 'text-gray-400'}`}>NHG</p>
-            <p className={`text-[10px] ${resultaat.nhgMogelijk ? 'text-emerald-600' : 'text-gray-400'}`}>
-              {resultaat.nhgMogelijk ? 'Van toepassing' : 'Niet van toepassing'}
-            </p>
-          </div>
-        </div>
-        <div className={`flex-1 flex items-center gap-2 rounded-xl px-3 py-2.5 border ${resultaat.startersvrijstelling ? 'bg-emerald-50 border-emerald-100' : 'bg-gray-50 border-gray-100'}`}>
-          <Sparkles className={`w-4 h-4 shrink-0 ${resultaat.startersvrijstelling ? 'text-emerald-500' : 'text-gray-300'}`} />
-          <div>
-            <p className={`text-[10px] font-semibold ${resultaat.startersvrijstelling ? 'text-emerald-700' : 'text-gray-400'}`}>Starter</p>
-            <p className={`text-[10px] ${resultaat.startersvrijstelling ? 'text-emerald-600' : 'text-gray-400'}`}>
-              {resultaat.startersvrijstelling ? 'Vrijstelling' : 'Niet van toepassing'}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 rounded-xl px-3 py-2.5 border bg-[#99248F]/5 border-[#99248F]/10">
-          <Clock className="w-4 h-4 shrink-0 text-[#99248F]" />
-          <div>
-            <p className="text-[10px] font-semibold text-[#99248F]">{hypotheekvormLabel}</p>
-            <p className="text-[10px] text-gray-400">{woning.looptijdJaar ?? 30} jaar</p>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Financieel overzicht ── */}
-      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50">
-          <p className="text-sm font-semibold text-[#0D1F3C]">Financieel overzicht</p>
-        </div>
-
-        {/* Rente */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50">
-          <p className="text-xs text-gray-500">Rente (10 jaar vast)</p>
-          <p className="text-sm font-bold text-[#99248F]">
-            {rente10 ? `${(rente10 * 100).toFixed(2).replace('.', ',')}%` : '—'}
-          </p>
-        </div>
-
-        {/* Bijkomende kosten — uitklapbaar */}
-        <button
-          type="button"
-          onClick={() => setKostenUitgeklapt(v => !v)}
-          className="w-full flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-gray-50 transition"
-        >
-          <p className="text-xs text-gray-500">Bijkomende kosten</p>
-          <div className="flex items-center gap-2">
-            <p className="text-sm font-bold text-[#0D1F3C]">{euro(resultaat.bijkomendeKosten.totaal)}</p>
-            {kostenUitgeklapt
-              ? <ChevronUp className="w-3.5 h-3.5 text-gray-400" />
-              : <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
-            }
-          </div>
-        </button>
-
-        {kostenUitgeklapt && (
-          <div className="px-4 pb-3 space-y-2 bg-gray-50">
-            {[
-              { label: 'Overdrachtsbelasting', bedrag: resultaat.bijkomendeKosten.overdrachtsbelasting },
-              { label: 'Notariskosten',         bedrag: resultaat.bijkomendeKosten.notarisKosten },
-              { label: 'Taxatiekosten',         bedrag: resultaat.bijkomendeKosten.taxatieKosten },
-              { label: 'Advieskosten',          bedrag: resultaat.bijkomendeKosten.adviesKosten },
-              ...(resultaat.bijkomendeKosten.nhgPremie > 0
-                ? [{ label: 'NHG-premie', bedrag: resultaat.bijkomendeKosten.nhgPremie }]
-                : []),
-            ].map(({ label, bedrag }) => (
-              <div key={label} className="flex items-center justify-between py-1">
-                <p className="text-xs text-gray-500">{label}</p>
-                <p className="text-xs font-medium text-[#0D1F3C]">{euro(bedrag)}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* ── Eigen geld slider ── */}
-      {(() => {
-        const koopbudget = Math.max(0,
-          resultaat.effectieveMaxHypotheek + sliderEigenGeld - resultaat.bijkomendeKosten.totaal
-        );
-        const extra = sliderEigenGeld - (woning.eigenGeld ?? 0);
-        return (
-          <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-[#0D1F3C]">Eigen geld</p>
-              <span className="text-sm font-bold text-[#99248F]">{euro(sliderEigenGeld)}</span>
-            </div>
-
-            <input
-              type="range"
-              min={0}
-              max={200000}
-              step={5000}
-              value={sliderEigenGeld}
-              onChange={e => setSliderEigenGeld(Number(e.target.value))}
-              className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
-              style={{ accentColor: '#99248F' }}
-            />
-
-            <div className="flex items-center justify-between border-t border-gray-50 pt-3">
-              <div>
-                <p className="text-[10px] text-gray-400 uppercase tracking-widest">Totaal koopbudget</p>
-                <p className="text-xl font-bold text-[#0D1F3C]">{euro(koopbudget)}</p>
-              </div>
-              {extra > 0 && (
-                <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg">
-                  +{euro(extra)}
-                </span>
-              )}
-            </div>
-            <p className="text-[10px] text-gray-300">
-              {euro(resultaat.effectieveMaxHypotheek)} hypotheek + {euro(sliderEigenGeld)} eigen geld − {euro(resultaat.bijkomendeKosten.totaal)} bijkomende kosten
-            </p>
-          </div>
-        );
-      })()}
+      {/* ── Voortgang ── */}
+      <VoortgangTracker heeftResultaat={!!resultaat} heeftWoning={woningen.length > 0} />
 
       {/* ── Woningen ── */}
-      {woningen.length > 0 && (
+      {woningen.length > 0 ? (
         <div>
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm font-semibold text-[#0D1F3C]">
               Woningen
               <span className="ml-2 text-xs font-normal text-gray-400">
-                {woningenPassen.length}/{woningen.length} binnen budget
+                {woningen.filter(w => w.vraagprijs <= resultaat.effectieveMaxHypotheek).length}/{woningen.length} binnen budget
               </span>
             </p>
             <button type="button" onClick={() => setTab('woningen')}
@@ -281,40 +246,19 @@ export function DashboardScreen() {
             </button>
           </div>
           <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4" style={{ scrollbarWidth: 'none' }}>
-            {woningen.slice(0, 5).map(w => {
-              const past = w.vraagprijs <= resultaat.effectieveMaxHypotheek;
-              return (
-                <div key={w.id} className={`rounded-xl border p-3 shrink-0 w-44 ${past ? 'bg-white border-gray-100' : 'bg-white border-gray-100'}`}>
-                  <div className="flex items-center gap-1.5 mb-1">
-                    {past
-                      ? <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                      : <XCircle className="w-3.5 h-3.5 text-red-400 shrink-0" />
-                    }
-                    <p className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${past ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
-                      {past ? 'Binnen budget' : 'Boven budget'}
-                    </p>
-                  </div>
-                  <p className="text-xs font-medium text-[#0D1F3C] truncate mt-1.5">{w.adres}</p>
-                  <p className="text-[10px] text-gray-400 truncate">{w.stad}</p>
-                  <p className="text-sm font-bold text-[#0D1F3C] mt-1.5">{euro(w.vraagprijs)}</p>
-                  {w.marktwaarde && (
-                    <p className={`text-[10px] mt-0.5 font-medium ${w.vraagprijs <= w.marktwaarde ? 'text-emerald-600' : 'text-amber-600'}`}>
-                      WOZ: {euro(w.marktwaarde)}
-                    </p>
-                  )}
-                </div>
-              );
-            })}
+            {woningen.slice(0, 5).map(w => (
+              <WoningKaart key={w.id} woning={w}
+                maxBudget={resultaat.effectieveMaxHypotheek}
+                onClick={() => setTab('woningen')} />
+            ))}
             <button type="button" onClick={() => setTab('woningen')}
               className="bg-gray-50 rounded-xl border border-dashed border-gray-200 p-3 shrink-0 w-44 flex flex-col items-center justify-center gap-1.5 cursor-pointer hover:border-[#99248F]/40 transition">
               <Plus className="w-5 h-5 text-gray-300" />
-              <p className="text-xs text-gray-400">Woning toevoegen</p>
+              <p className="text-xs text-gray-400">Toevoegen</p>
             </button>
           </div>
         </div>
-      )}
-
-      {woningen.length === 0 && (
+      ) : (
         <button type="button" onClick={() => setTab('woningen')}
           className="w-full bg-white rounded-xl border border-dashed border-gray-200 p-4 flex items-center gap-3 hover:border-[#99248F]/40 transition cursor-pointer">
           <div className="w-9 h-9 bg-gray-50 rounded-lg flex items-center justify-center shrink-0">
@@ -328,47 +272,28 @@ export function DashboardScreen() {
         </button>
       )}
 
-      {/* ── Scenario's ── */}
-      {berekeningen.length > 0 && (
-        <div>
-          <p className="text-sm font-semibold text-[#0D1F3C] mb-2">Opgeslagen scenario's</p>
-          <div className="space-y-2">
-            {berekeningen.slice(0, 3).map(b => (
-              <button key={b.id} type="button"
-                onClick={() => { herstelScenario(b.wizardInvoer, b.resultaat); setStap(8); }}
-                className="w-full bg-white rounded-xl border border-gray-100 px-4 py-3 flex items-center gap-3 hover:border-[#99248F]/30 transition cursor-pointer group">
-                <div className="w-8 h-8 bg-[#99248F]/8 rounded-lg flex items-center justify-center shrink-0">
-                  <BookmarkPlus className="w-4 h-4 text-[#99248F]" />
-                </div>
-                <div className="flex-1 min-w-0 text-left">
-                  <p className="text-sm font-medium text-[#0D1F3C] truncate">{b.naam}</p>
-                  <p className="text-xs text-gray-400">{euro(b.maxHypotheek)} · {b.aangemaakt}</p>
-                </div>
-                <ChevronRight className="w-4 h-4 text-gray-200 group-hover:text-[#99248F] transition shrink-0" />
-              </button>
-            ))}
+      {/* ── Acties (alleen niet-nav acties) ── */}
+      <div className="grid grid-cols-2 gap-3">
+        <button type="button" onClick={() => drukRapportAf(resultaat, sessie.naam)}
+          className="bg-white rounded-xl border border-gray-100 p-4 flex items-center gap-3 hover:border-[#99248F]/30 transition cursor-pointer">
+          <div className="w-8 h-8 bg-[#99248F]/8 rounded-lg flex items-center justify-center shrink-0">
+            <FileText className="w-4 h-4 text-[#99248F]" />
           </div>
-        </div>
-      )}
-
-      {/* ── Snelle acties ── */}
-      <div>
-        <p className="text-sm font-semibold text-[#0D1F3C] mb-2">Snelle acties</p>
-        <div className="grid grid-cols-3 gap-2">
-          {[
-            { icon: TrendingUp, label: 'Analyseer\nwoning',      actie: () => setTab('woningen') },
-            { icon: FileText,   label: 'PDF\nrapport',           actie: () => drukRapportAf(resultaat, sessie.naam) },
-            { icon: RefreshCw,  label: 'Nieuwe\nberekening',     actie: () => setStap(1) },
-          ].map(({ icon: Icon, label, actie }) => (
-            <button key={label} type="button" onClick={actie}
-              className="bg-white rounded-xl border border-gray-100 p-3.5 flex flex-col items-center gap-2 hover:border-[#99248F]/30 hover:bg-[#99248F]/[0.02] transition cursor-pointer">
-              <div className="w-9 h-9 bg-[#99248F]/8 rounded-xl flex items-center justify-center">
-                <Icon className="w-4 h-4 text-[#99248F]" />
-              </div>
-              <p className="text-[10px] text-gray-500 text-center leading-tight whitespace-pre-line">{label}</p>
-            </button>
-          ))}
-        </div>
+          <div className="text-left">
+            <p className="text-xs font-semibold text-[#0D1F3C]">PDF rapport</p>
+            <p className="text-[10px] text-gray-400">Download overzicht</p>
+          </div>
+        </button>
+        <button type="button" onClick={() => setStap(1)}
+          className="bg-white rounded-xl border border-gray-100 p-4 flex items-center gap-3 hover:border-[#99248F]/30 transition cursor-pointer">
+          <div className="w-8 h-8 bg-[#99248F]/8 rounded-lg flex items-center justify-center shrink-0">
+            <RefreshCw className="w-4 h-4 text-[#99248F]" />
+          </div>
+          <div className="text-left">
+            <p className="text-xs font-semibold text-[#0D1F3C]">Herberekenen</p>
+            <p className="text-[10px] text-gray-400">Pas gegevens aan</p>
+          </div>
+        </button>
       </div>
 
     </div>
